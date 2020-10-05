@@ -1,7 +1,5 @@
 ﻿
 using System;
-using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
 using ImageRecognition;
 
@@ -20,9 +18,9 @@ namespace Launcher
             await ImageRecognizer.RecognitionAsync(imagesPath);
 
         }
-        static void OutputRecognitionHandler(string s)
+        static void OutputRecognitionHandler(Prediction s)
         {
-            Console.WriteLine(s);
+            Console.WriteLine($"{s.Path, 80} {s.Label, 15} {s.Confidence, 15}");
         }
     }
 }
