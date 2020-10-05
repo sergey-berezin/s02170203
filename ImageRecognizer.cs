@@ -1,10 +1,9 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.ML.OnnxRuntime;
@@ -21,7 +20,7 @@ namespace ImageRecognition
 
 //===========================================================================================//
 
-        public delegate void OutputHandler(string s);
+        public delegate void OutputHandler(Prediction s);
         public static event OutputHandler ImageRecognizerResultUpdate;
 
 //===========================================================================================//
@@ -43,8 +42,7 @@ namespace ImageRecognition
         public static async Task RecognitionAsync(string imagesPath = @"D:\Code\C#\7\prac\images")
         {
             
-            string[] images = Directory.GetFiles(imagesPath);
-            
+            string[] images = Directory.GetFiles(imagesPath);           
             Task[] tasks = new Task[images.Length];
 
             try
@@ -99,18 +97,16 @@ namespace ImageRecognition
 
                         IEnumerable<Prediction> top1 = softmax.Select((x, i) => new Prediction { Label = LabelMap.Labels[i], Confidence = x })
                                             .OrderByDescending(x => x.Confidence)
-                                            .Take(2);
-                        string res = "";
-                        foreach (var t in top1)
-                        {
-                            res += $"{Path.GetFileName((string)imagePath),15} {t.Label,20} {t.Confidence,15}\n";
-                        }
+                                            .Take(1);
+                        Prediction prediction = top1.First();
+                        prediction.Path = Path.GetFileName((string)imagePath);
+
                         if (token.IsCancellationRequested)
                         {
                             throw new OperationCanceledException();
                         }
                         
-                        ImageRecognizerResultUpdate?.Invoke(res);
+                        ImageRecognizerResultUpdate?.Invoke(prediction);
 
                     }, images[i], token);
                 }
@@ -118,23 +114,22 @@ namespace ImageRecognition
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("Cancelled by user.");
+                Trace.WriteLine("Cancelled by user.");
             }
         }    
 
         public static void CancelRecognition()
         {
-
             cts.Cancel();
-
         }
 
 
 //===========================================================================================//   
     }
 
-    internal class Prediction
+    public struct Prediction
     {
+        public string Path { get; set; }
         public string Label { get; set; }
         public float Confidence { get; set; }
     }
