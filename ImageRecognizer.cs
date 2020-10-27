@@ -29,6 +29,8 @@ namespace ImageRecognition
         private static CancellationTokenSource cts { get; set; }
         private static CancellationToken token { get; set; }
 
+        private static Task[] tasks;
+
 //===========================================================================================//
 
         static ImageRecognizer()
@@ -43,7 +45,7 @@ namespace ImageRecognition
         {
             
             string[] images = Directory.GetFiles(imagesPath);           
-            Task[] tasks = new Task[images.Length];
+            tasks = new Task[images.Length];
 
             try
             {
@@ -85,10 +87,10 @@ namespace ImageRecognition
 
                         var session = new InferenceSession(onnxModelPath);
                         IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
-
+                                               
                         if (token.IsCancellationRequested)
                         {
-                            throw new OperationCanceledException();
+                            return;
                         }
 
                         IEnumerable<float> output = results.First().AsEnumerable<float>();
@@ -103,26 +105,47 @@ namespace ImageRecognition
 
                         if (token.IsCancellationRequested)
                         {
-                            throw new OperationCanceledException();
+                            return;
                         }
                         
                         ImageRecognizerResultUpdate?.Invoke(prediction);
+                        
+                        session.Dispose();
+                        image.Dispose();
+                        imageStream.Dispose();
 
                     }, images[i], token);
                 }
                 await Task.WhenAll(tasks);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e)
             {
-                Trace.WriteLine("Cancelled by user.");
+                Trace.WriteLine($"{nameof(OperationCanceledException)} thrown with message: {e.Message}");
             }
         }    
 
-        public static void CancelRecognition()
+        public static async Task CancelRecognitionAsync()
         {
-            cts.Cancel();
+            try
+            {
+                cts.Cancel();
+                await Task.WhenAll(tasks);                
+            }
+            catch (OperationCanceledException e)
+            {
+                Trace.WriteLine($"{nameof(OperationCanceledException)} thrown with message: {e.Message}");
+            }
+            finally
+            {
+                foreach (Task t in tasks)
+                {
+                    t.Dispose();
+                }
+                cts.Dispose();
+                cts = new CancellationTokenSource();
+                token = cts.Token;
+            }
         }
-
 
 //===========================================================================================//   
     }
