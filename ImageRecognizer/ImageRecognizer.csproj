@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <RootNamespace>ImageRecognition</RootNamespace>
+    <Authors>dolomiten</Authors>
+    <Company>dolomiten Inc.</Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="samples\**" />
+    <EmbeddedResource Remove="samples\**" />
+    <None Remove="samples\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove=".gitattributes" />
+    <None Remove=".gitignore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.4.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.1" />
+  </ItemGroup>
+
+</Project>
