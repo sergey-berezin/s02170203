@@ -10,21 +10,26 @@
     <Compile Remove="ImageRecognizerVM\**" />
     <Compile Remove="ImageRecognizer\**" />
     <Compile Remove="ImagerRecognizerVM\**" />
+    <Compile Remove="samples\**" />
     <EmbeddedResource Remove="ImageRecognizerVM\**" />
     <EmbeddedResource Remove="ImageRecognizer\**" />
     <EmbeddedResource Remove="ImagerRecognizerVM\**" />
+    <EmbeddedResource Remove="samples\**" />
     <None Remove="ImageRecognizerVM\**" />
     <None Remove="ImageRecognizer\**" />
     <None Remove="ImagerRecognizerVM\**" />
+    <None Remove="samples\**" />
     <Page Remove="ImageRecognizerVM\**" />
     <Page Remove="ImageRecognizer\**" />
     <Page Remove="ImagerRecognizerVM\**" />
+    <Page Remove="samples\**" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove=".gitattributes" />
     <None Remove=".gitignore" />
     <None Remove="README.md" />
+    <None Remove="resnet34-v1-7.onnx" />
   </ItemGroup>
 
   <ItemGroup>
