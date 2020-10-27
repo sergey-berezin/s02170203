@@ -1,0 +1,115 @@
+﻿<Window x:Class="wpfTest.MainWindow" MinHeight="450" MinWidth="800"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:wpfTest"
+        mc:Ignorable="d"
+        Title="task #2" Height="900" Width="1600">
+
+    <Window.Resources>
+        <DataTemplate x:Key="Template">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Path=Label}"/>
+                <TextBlock Text="   "/>
+                <TextBlock Text="{Binding Path=Count}"/>
+            </StackPanel>
+        </DataTemplate>
+        <RoutedCommand x:Key="ControlCommand"/>
+        <RoutedCommand x:Key="OpenImagesCommand"/>
+        <RoutedCommand x:Key="OpenModelCommand"/>
+    </Window.Resources>
+
+    <Window.CommandBindings>
+        <CommandBinding Command="{StaticResource ControlCommand}"
+                        Executed="Control"/>
+        <CommandBinding Command="{StaticResource OpenImagesCommand}"
+                        Executed="OpenImages"/>
+        <CommandBinding Command="{StaticResource OpenModelCommand}"
+                        Executed="OpenOnnxModel"/>
+    </Window.CommandBindings>
+
+    <Grid ShowGridLines="False" MinHeight="500">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="10"></RowDefinition>
+            <RowDefinition Height="60"></RowDefinition>
+            <RowDefinition Height="60"></RowDefinition>
+            <RowDefinition Height="40"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="10"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="30"></ColumnDefinition>
+            <ColumnDefinition Width="0.75*"></ColumnDefinition>
+            <ColumnDefinition Width="20"></ColumnDefinition>
+            <ColumnDefinition Width="30"></ColumnDefinition>
+            <ColumnDefinition Width="20"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="30"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <TextBox x:Name="imagesPath" Text="{Binding Path=ImagesPath}"
+                 FontSize="16"
+                 Grid.Column="1" Grid.Row="1"
+                 HorizontalAlignment="Stretch"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap"
+                 Height="35"/>
+
+        <Button Content="..." Command="{StaticResource OpenImagesCommand}"
+                Grid.Column="1" Grid.Row="1"
+                HorizontalAlignment="Right"
+                Height="35" Width="35">
+        </Button>
+
+        <TextBox x:Name="onnxPath" Text="{Binding Path=OnnxModelPath}"
+                 FontSize="16"
+                 Grid.Column="1" Grid.Row="2"
+                 HorizontalAlignment="Stretch"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap"
+                 Height="35"/>
+        
+        <Button Content="..." Command="{StaticResource OpenModelCommand}"
+                Grid.Column="1" Grid.Row="2"
+                HorizontalAlignment="Right"
+                Height="35" Width="35">
+        </Button>
+
+        <Button x:Name="controlButton"
+                Content="Start" Command="{StaticResource ControlCommand}" 
+                Height="25" Width="70" Grid.Column="1" Grid.Row="3"/>
+
+        <!--<ListBox x:Name="Results" ItemsSource="{Binding Path=Predictions, UpdateSourceTrigger=PropertyChanged}"
+                 ItemTemplate="{Binding Source={StaticResource Template}}"
+                 BorderThickness="6"
+                 Grid.Row="3" Grid.Column="1">
+        </ListBox>-->
+
+        <ProgressBar x:Name="ProgressBar" Value="{Binding Path=ImagesCounter}"
+                     Orientation="Vertical"
+                     Minimum="0" Maximum="{Binding Path=ImagesCount}"
+                     Grid.Column="3" Grid.Row="1" Grid.RowSpan="4"></ProgressBar>
+
+        <!--SelectionChanged="ListViewSelectionChanged"-->
+
+        <ListView x:Name="Labels"
+                  SelectionChanged="ListViewSelectionChanged"
+                  ItemsSource="{Binding}"
+                  Grid.Row="4" Grid.Column="1" 
+                  HorizontalAlignment="Stretch" BorderThickness="6">
+            <ListView.View>
+                <GridView AllowsColumnReorder="False">
+                    <GridViewColumn Header="Label" Width="400" DisplayMemberBinding="{Binding Path=Label}"></GridViewColumn>
+                    <GridViewColumn Header="Count" Width="400" DisplayMemberBinding="{Binding Path=Count}">
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <ListBox x:Name="PictiresPanel" ItemsSource="{Binding Path=Images}"
+                   Background="AliceBlue"
+                   Grid.Row="1" Grid.Column="5" Grid.RowSpan="4">
+        </ListBox>
+    </Grid>
+</Window>
