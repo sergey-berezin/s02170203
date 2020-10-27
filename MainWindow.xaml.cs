@@ -34,7 +34,7 @@ namespace wpfTest
 
         public MainWindow()
         {
-            ImageRecognizer.ImageRecognizerResultUpdate += CreateImage;
+            ImageRecognizer.Result += CreateImage;
             ImageReady += Add;
 
             imageRecognizer = new ImageRecognizerVM();
@@ -86,11 +86,24 @@ namespace wpfTest
             if (imageRecognizer.IsRunning) //stop recognition
             {
                 controlButton.IsEnabled = false;
-                await imageRecognizer.Stop();
-                controlButton.IsEnabled = true;
-                controlButton.Content = "Start";
+                try
+                {
+                    await imageRecognizer.Stop();
+                    controlButton.IsEnabled = true;
+                    controlButton.Content = "Start";
 
-        }
+                }
+                catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
+                {
+                    MessageBox.Show($"{s.Message}");
+                }
+                finally
+                {
+                    controlButton.IsEnabled = true;
+                    controlButton.Content = "Start";
+                    imageRecognizer.IsRunning = false;
+                }
+            }
             else //start recognition
             {
                 controlButton.Content = "Stop";
@@ -103,13 +116,16 @@ namespace wpfTest
 
                 catch (DirectoryNotFoundException)
                 {
-                    MessageBox.Show($"Директория {imageRecognizer.ImagesPath} не найдена");
-                    controlButton.Content = "Start";
+                    MessageBox.Show($"Директория {imageRecognizer.ImagesPath} не найдена");                    
                 }
                 catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
                 {
-                    MessageBox.Show($"Bad allocation.\n Нехватка RAM. Выберите другую модель или уменьшите количсетво файлов.");
+                    MessageBox.Show($"{s.Message}");                   
+                }
+                finally
+                {
                     controlButton.Content = "Start";
+                    imageRecognizer.IsRunning = false;
                 }
             }
         }

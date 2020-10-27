@@ -7,11 +7,32 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ImageRecognizerVM\**" />
+    <Compile Remove="ImageRecognizer\**" />
+    <Compile Remove="ImagerRecognizerVM\**" />
+    <EmbeddedResource Remove="ImageRecognizerVM\**" />
+    <EmbeddedResource Remove="ImageRecognizer\**" />
+    <EmbeddedResource Remove="ImagerRecognizerVM\**" />
+    <None Remove="ImageRecognizerVM\**" />
+    <None Remove="ImageRecognizer\**" />
+    <None Remove="ImagerRecognizerVM\**" />
+    <Page Remove="ImageRecognizerVM\**" />
+    <Page Remove="ImageRecognizer\**" />
+    <Page Remove="ImagerRecognizerVM\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove=".gitattributes" />
+    <None Remove=".gitignore" />
+    <None Remove="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ImageRecognizerVM\ImagerRecognizerVM\ImageRecognizerVM.csproj" />
+    <ProjectReference Include="ImageRecognizerVM\ImageRecognizerVM.csproj" />
   </ItemGroup>
 
   <ItemGroup>
