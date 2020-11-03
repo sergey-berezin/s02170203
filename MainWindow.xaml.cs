@@ -26,16 +26,13 @@ namespace wpfTest
 {
     public partial class MainWindow : Window
     {
-        public delegate void OutputHandler(Blank b);
-        public static event OutputHandler ImageReady;
 
         private ImageRecognizerVM imageRecognizer;
         private PictireObservable pictires;
 
         public MainWindow()
         {
-            ImageRecognizer.Result += CreateImage;
-            ImageReady += Add;
+            ImageRecognizer.Result += Add;
 
             imageRecognizer = new ImageRecognizerVM();
             pictires = new PictireObservable();
@@ -132,19 +129,26 @@ namespace wpfTest
 
 //===========================================================================================//
         
-        private void Add(Blank s)
-        {                              
+        private void Add(Prediction prediction)
+        {
+            BitmapImage bmp = new BitmapImage();
+            bmp.BeginInit();
+            bmp.UriSource = new Uri(imageRecognizer.ImagesPath + "\\" + prediction.Path);
+            bmp.DecodePixelWidth = 800;
+            bmp.EndInit();
+            bmp.Freeze();
+
             App.Current.Dispatcher.Invoke(() =>
             {
                 var l = (from pic in pictires
-                         where pic.Label == s.Label
+                         where pic.Label == prediction.Label
                          select pic).FirstOrDefault();
                 
                 if (l == null) //first time 
                 {
-                    pictires.Add(new Pictire(s.Label, new Image()
+                    pictires.Add(new Pictire(prediction.Label, new Image()
                     {
-                        Source = s.Image,
+                        Source = bmp,
                     }));
                 }
                 else
@@ -153,7 +157,7 @@ namespace wpfTest
                     pictires[index].Count++;
                     pictires[index].Images.Add(new Image()
                     {
-                        Source = s.Image,
+                        Source = bmp,
                     });
                 }
 
@@ -167,31 +171,6 @@ namespace wpfTest
             });                      
         }
 
-        private async Task ImageGenerationAsync(Prediction p)
-        {
-            await Task.Factory.StartNew((pred) =>
-            {
-                Prediction prediction = (Prediction)pred;
-                BitmapImage bmp = new BitmapImage();
-                bmp.BeginInit();
-                bmp.UriSource = new Uri(imageRecognizer.ImagesPath + "\\" + prediction.Path);
-                bmp.DecodePixelWidth = 800;
-                bmp.EndInit();
-                bmp.Freeze();
-                ImageReady(new Blank()
-                {
-                    Image = bmp,
-                    Label = prediction.Label,
-                }); ;                    
-            }, p);
-        }
-
-        private async void CreateImage(Prediction p)
-        {
-            await ImageGenerationAsync(p);
-        }
-
-
 //===========================================================================================//
 
         private void ListViewSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -201,12 +180,6 @@ namespace wpfTest
                 PictiresPanel.DataContext = (Pictire)Labels.SelectedItem;
             }
         }
-    }
-
-    public struct Blank
-    {
-        public BitmapImage Image;
-        public string Label;
     }
 
     internal class Pictire : BaseViewModel
