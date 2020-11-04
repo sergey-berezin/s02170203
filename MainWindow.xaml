@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:wpfTest"
         mc:Ignorable="d"
         Title="task #2" Height="900" Width="1600">
 
@@ -76,22 +75,14 @@
                 Height="35" Width="35">
         </Button>
 
-        <Button x:Name="controlButton"
-                Content="Start" Command="{StaticResource ControlCommand}" 
+        <Button x:Name="controlButton" IsEnabled="{Binding Path=ControlButtonEnabled}"
+                Content="{Binding Path=ControlButtonContent}" Command="{StaticResource ControlCommand}" 
                 Height="25" Width="70" Grid.Column="1" Grid.Row="3"/>
-
-        <!--<ListBox x:Name="Results" ItemsSource="{Binding Path=Predictions, UpdateSourceTrigger=PropertyChanged}"
-                 ItemTemplate="{Binding Source={StaticResource Template}}"
-                 BorderThickness="6"
-                 Grid.Row="3" Grid.Column="1">
-        </ListBox>-->
 
         <ProgressBar x:Name="ProgressBar" Value="{Binding Path=ImagesCounter}"
                      Orientation="Vertical"
                      Minimum="0" Maximum="{Binding Path=ImagesCount}"
                      Grid.Column="3" Grid.Row="1" Grid.RowSpan="4"></ProgressBar>
-
-        <!--SelectionChanged="ListViewSelectionChanged"-->
 
         <ListView x:Name="Labels"
                   SelectionChanged="ListViewSelectionChanged"

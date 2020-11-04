@@ -1,22 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿
 using System.ComponentModel;
 using System.IO;
-using System.Drawing;
-using System.Windows.Input;
-using System.Net.Http.Headers;
-using System.Threading;
-using System.Windows;
 using ImageRecognition;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace ImageRecognizerViewModel
 {
     public class ImageRecognizerVM : BaseViewModel
     {
-        public PredictionObservable Predictions { get; private set; }
+        
+        public string ControlButtonContent { get; private set; } = "Start";
+        public bool ControlButtonEnabled { get; private set; } = true;
 
 //===========================================================================================// 
 
@@ -48,8 +42,6 @@ namespace ImageRecognizerViewModel
             }
         }
 
-//===========================================================================================// 
-
         private int imagesCount = 1;
         public int ImagesCount
         {
@@ -78,106 +70,59 @@ namespace ImageRecognizerViewModel
             }
         }
 
-        public bool IsRunning { get; set; } = false;
-
-//===========================================================================================// 
-
-        public ImageRecognizerVM()
+        private bool isRunning = false;
+        public bool IsRunning
         {
-            Predictions = new PredictionObservable();
+            get
+            {
+                return isRunning;
+            }
+            set
+            {
+                ControlButtonContent = value ? "Stop" : "Start";
+                isRunning = value;
+                OnPropertyChanged(nameof(IsRunning));
+                OnPropertyChanged(nameof(ControlButtonContent));
+            }
+        }
+
+        private bool isStopping = false;
+        public bool IsStopping
+        {
+            get
+            {
+                return isStopping;
+            }
+            set
+            {
+                ControlButtonEnabled = value ? false : true;
+                isStopping = value;
+                OnPropertyChanged(nameof(IsStopping));
+                OnPropertyChanged(nameof(ControlButtonEnabled));
+            }
         }
 
 //===========================================================================================// 
-
-        public void Add(Prediction prediction)
-        {
-            var l = (from pred in Predictions
-                     where pred.Label == prediction.Label
-                     select pred).FirstOrDefault();
-
-            if (l == null) //first time 
-            {
-                Predictions.Add(new PredictionVM(prediction.Label, prediction.Path));
-            }
-            else
-            {
-                int index = Predictions.IndexOf(l);
-                Predictions[index].Count++;
-                Predictions[index].Images.Add(prediction.Path);
-            }
-
-            ImagesCounter++;
-
-            if (ImagesCount == ImagesCounter)
-            {
-                IsRunning = false;
-            }
-
-            OnPropertyChanged(nameof(Predictions));
-        }
 
         public async Task Start()
         {
-            Predictions.Clear();
+            IsRunning = true;           
             ImagesCount = Directory.GetFiles(ImagesPath).Length;
             ImagesCounter = 0;
-            IsRunning = true;
             ImageRecognizer.onnxModelPath = OnnxModelPath;
-            await ImageRecognizer.RecognitionAsync(ImagesPath);           
+            await ImageRecognizer.RecognitionAsync(ImagesPath);
+            IsRunning = false;
         }
 
         public async Task Stop()
         {
+            IsStopping = true;
             await ImageRecognizer.CancelRecognitionAsync();
-            IsRunning = false;
+            IsStopping = false;
         }
 
-//===========================================================================================// 
+//===========================================================================================//
     }
-
-    public class PredictionVM : BaseViewModel
-    {
-        private string label;
-        public string Label
-        {
-            get
-            {
-                return label;
-            }
-            set
-            {
-                label = value;
-                OnPropertyChanged(nameof(Label));
-            }
-        }
-        
-        
-        private int count;
-        public int Count
-        {
-            get
-            {
-                return count;
-            }
-            set
-            {
-                count = value;
-                OnPropertyChanged(nameof(Count));
-            }
-        }
-
-        public List<string> Images;
-
-        public PredictionVM(string label, string path)
-        {
-            Label = label;
-            Count = 1;
-            Images = new List<string>();
-            Images.Add(path);
-        }
-    }
-
-    public class PredictionObservable : ObservableCollection<PredictionVM>, INotifyPropertyChanged { }
 
     public class BaseViewModel : INotifyPropertyChanged
     {

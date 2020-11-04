@@ -1,24 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿
+using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.Win32;
-using System.Collections.Specialized;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using ImageRecognizerViewModel;
 using ImageRecognition;
 using System.IO;
-using System.Windows.Threading;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
@@ -39,8 +30,8 @@ namespace wpfTest
             
             InitializeComponent();
             Labels.DataContext = pictires;
-            PictiresPanel.DataContext = pictires;
-            this.DataContext = imageRecognizer;
+            PictiresPanel.DataContext = pictires;            
+            DataContext = imageRecognizer;
         }
 
 //===========================================================================================//
@@ -56,14 +47,13 @@ namespace wpfTest
             }
             catch (Exception)
             {
-                MessageBox.Show("Директория не выбрана.");
+                MessageBox.Show("Директория не выбрана.", "Ошибка");
             }
         }
 
         private void OpenOnnxModel(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Multiselect = true;
             openFileDialog.Filter = "Onnx Model (*.onnx)|*.onnx";
             openFileDialog.ShowDialog();
             try
@@ -72,7 +62,7 @@ namespace wpfTest
             }
             catch (Exception)
             {
-                MessageBox.Show("Файл не выбран.");
+                MessageBox.Show("Файл не выбран.", "Ошибка");
             }
         }
 
@@ -82,28 +72,22 @@ namespace wpfTest
         {
             if (imageRecognizer.IsRunning) //stop recognition
             {
-                controlButton.IsEnabled = false;
                 try
                 {
                     await imageRecognizer.Stop();
-                    controlButton.IsEnabled = true;
-                    controlButton.Content = "Start";
-
                 }
                 catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
                 {
-                    MessageBox.Show($"{s.Message}");
+                    MessageBox.Show($"{s.Message}", "Ошибка");
                 }
                 finally
                 {
-                    controlButton.IsEnabled = true;
-                    controlButton.Content = "Start";
                     imageRecognizer.IsRunning = false;
+                    imageRecognizer.IsStopping = false;
                 }
             }
             else //start recognition
             {
-                controlButton.Content = "Stop";
                 pictires.Clear();
                 PictiresPanel.DataContext = null;
                 try
@@ -113,16 +97,20 @@ namespace wpfTest
 
                 catch (DirectoryNotFoundException)
                 {
-                    MessageBox.Show($"Директория {imageRecognizer.ImagesPath} не найдена");                    
+                    MessageBox.Show($"Директория {imageRecognizer.ImagesPath} не найдена", "Ошибка");                    
                 }
                 catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
                 {
-                    MessageBox.Show($"{s.Message}");                   
+                    MessageBox.Show($"{s.Message}", "Ошибка");                   
+                }
+                catch (Exception)
+                {
+                    MessageBox.Show("В каталоге не только фотогорафии", "Ошибка");
                 }
                 finally
                 {
-                    controlButton.Content = "Start";
                     imageRecognizer.IsRunning = false;
+                    imageRecognizer.IsStopping = false;
                 }
             }
         }
