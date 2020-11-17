@@ -41,16 +41,14 @@ namespace ImageRecognition
 
 //===========================================================================================//
 
-        public static async Task RecognitionAsync(string imagesPath = @"D:\Code\C#\7\prac\images")
-        {
-            
-            string[] images = Directory.GetFiles(imagesPath);           
+        public static async Task RecognitionAsync(string[] images)
+        {                   
             tasks = new Task[images.Length];
 
             try
             {
                 for (int i = 0; i < images.Length; i++)
-                {
+                {                                   
                     tasks[i] = Task.Factory.StartNew((imagePath) =>
                     {
                         Image<Rgb24> image = Image.Load<Rgb24>((string)imagePath, out IImageFormat format);

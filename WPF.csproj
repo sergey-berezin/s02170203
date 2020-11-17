@@ -7,18 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DataBaseSetup\**" />
     <Compile Remove="ImageRecognizerVM\**" />
     <Compile Remove="ImageRecognizer\**" />
     <Compile Remove="ImagerRecognizerVM\**" />
     <Compile Remove="samples\**" />
+    <EmbeddedResource Remove="DataBaseSetup\**" />
     <EmbeddedResource Remove="ImageRecognizerVM\**" />
     <EmbeddedResource Remove="ImageRecognizer\**" />
     <EmbeddedResource Remove="ImagerRecognizerVM\**" />
     <EmbeddedResource Remove="samples\**" />
+    <None Remove="DataBaseSetup\**" />
     <None Remove="ImageRecognizerVM\**" />
     <None Remove="ImageRecognizer\**" />
     <None Remove="ImagerRecognizerVM\**" />
     <None Remove="samples\**" />
+    <Page Remove="DataBaseSetup\**" />
     <Page Remove="ImageRecognizerVM\**" />
     <Page Remove="ImageRecognizer\**" />
     <Page Remove="ImagerRecognizerVM\**" />
@@ -33,10 +37,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="DataBaseSetup\DataBaseSetup.csproj" />
     <ProjectReference Include="ImageRecognizerVM\ImageRecognizerVM.csproj" />
   </ItemGroup>
 
