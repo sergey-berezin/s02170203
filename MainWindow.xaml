@@ -9,7 +9,7 @@
     <Window.Resources>
         <DataTemplate x:Key="Template">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="{Binding Path=Label}"/>
+                <TextBlock Text="{Binding Path=Title}"/>
                 <TextBlock Text="   "/>
                 <TextBlock Text="{Binding Path=Count}"/>
             </StackPanel>
@@ -93,12 +93,12 @@
 
         <ListView x:Name="Labels" Margin="0 10 0 0"
                   SelectionChanged="ListViewSelectionChanged"
-                  ItemsSource="{Binding}"
+                  ItemsSource="{Binding Path=Recognitions}"
                   Grid.Row="4" Grid.Column="1" 
                   HorizontalAlignment="Stretch" BorderThickness="6">
             <ListView.View>
                 <GridView AllowsColumnReorder="False">
-                    <GridViewColumn Header="Label" Width="400" DisplayMemberBinding="{Binding Path=Label}"></GridViewColumn>
+                    <GridViewColumn Header="Label" Width="400" DisplayMemberBinding="{Binding Path=Title}"></GridViewColumn>
                     <GridViewColumn Header="Count" Width="400" DisplayMemberBinding="{Binding Path=Count}">
                     </GridViewColumn>
                 </GridView>

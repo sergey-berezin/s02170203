@@ -12,10 +12,12 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 
-using DataBaseSetup;
+//using DataBaseSetup;
 using ImageRecognizerViewModel;
 using ImageRecognition;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace WPF
 {
@@ -23,41 +25,38 @@ namespace WPF
     {
 
         private ImageRecognizerVM imageRecognizer;
-        private PictireObservable pictires;
 
         public MainWindow()
         {
             ImageRecognizer.Result += Add;
 
             imageRecognizer = new ImageRecognizerVM();
-            pictires = new PictireObservable();
 
             InitializeComponent();
 
-            using (var db = new Context())
+            using (var db = new DataBaseSetup.Context())
             {
-                foreach (var r in db.Recognitions.Include(a => a.Photo).ThenInclude(a => a.Pixels))
+                foreach (var r in db.Recognitions.Include(a => a.Photos).ThenInclude(a => a.Pixels))
                 {
                     ObservableCollection<Photo> a = new ObservableCollection<Photo>();
-                    foreach (var photo in r.Photo)
+                    foreach (var photo in r.Photos)
                     {
                         a.Add(new Photo
                         {
+                            IsSavedInDataBase = true,
                             Path = photo.Path,
+                            Pixels = null,
                             Image = ByteToImage(photo.Pixels.Pixels)
-                        });
+                        }); ;
                     }
-                    pictires.Add(new Pictire()
+                    imageRecognizer.Recognitions.Add(new Recognition
                     {
-                        Label = r.Title,
-                        Count = r.Count,
+                        Title = r.Title,
+                        Count = r.Photos.Count,
                         Photos = a
                     });
                 }
-            }
-
-            Labels.DataContext = pictires;
-            PictiresPanel.DataContext = pictires;            
+            }          
             DataContext = imageRecognizer;
         }
 
@@ -70,12 +69,9 @@ namespace WPF
             dialog.ShowDialog();
             try
             {
-                imageRecognizer.ImagesPath = dialog.FileName;
+                imageRecognizer.ImagesPath = dialog.FileName ?? imageRecognizer.ImagesPath;
             }
-            catch (Exception)
-            {
-                MessageBox.Show("Директория не выбрана.", "Ошибка");
-            }
+            catch { }
         }
 
         private void OpenOnnxModel(object sender, RoutedEventArgs e)
@@ -115,10 +111,13 @@ namespace WPF
             }
             else //start recognition
             {
-                PictiresPanel.DataContext = null;
+                //PictiresPanel.DataContext = null;
                 try
                 {
+                    imageRecognizer.IsRunning = true;
+                    await Task.Run(async () => imageRecognizer.Photos = await ImageGenerator(imageRecognizer.ImagesPath));
                     await imageRecognizer.Start();
+                    imageRecognizer.IsRunning = false;
                 }
 
                 catch (DirectoryNotFoundException)
@@ -129,10 +128,10 @@ namespace WPF
                 {
                     MessageBox.Show($"{s.Message}", "Ошибка");                   
                 }
-                catch (Exception s)
-                {
-                    MessageBox.Show($"{s.Message}", "Ошибка");
-                }
+                //catch (Exception s)
+                //{
+                //    MessageBox.Show($"{s.Message}", "Ошибfgfка");
+                //}
                 finally
                 {
                     imageRecognizer.IsRunning = false;
@@ -143,62 +142,41 @@ namespace WPF
 
         private async void ClearStorage(object sender, ExecutedRoutedEventArgs e)
         {
-            Trace.WriteLine("AAA");
+            PictiresPanel.DataContext = null;
             await imageRecognizer.Clear();
-            pictires.Clear();
+            imageRecognizer.Recognitions.Clear();
         }
 
 //===========================================================================================//
 
         private void Add(Prediction prediction)
         {
-            BitmapImage bmp = new BitmapImage();
-            bmp.BeginInit();
-            bmp.UriSource = new Uri(imageRecognizer.ImagesPath + "\\" + prediction.Path);
-            bmp.DecodePixelWidth = 80;
-            bmp.EndInit();
-            bmp.Freeze();
-
             string path = imageRecognizer.ImagesPath + "\\" + prediction.Path;
 
             App.Current.Dispatcher.Invoke(() =>
             {
-                var l = (from pic in pictires
-                         where pic.Label == prediction.Label
+                var l = (from pic in imageRecognizer.Recognitions
+                         where pic.Title == prediction.Label
                          select pic).FirstOrDefault();
 
-                var q = (from pic in imageRecognizer.Files
-                         where pic.Recognition == prediction.Label
+                var q = (from pic in imageRecognizer.Photos
+                         where path == pic.Path
                          select pic).FirstOrDefault();
-                
-                if (q == null)
-                {
-                    imageRecognizer.Files.Add(new FileBlank(prediction.Label, path, ImagetoByte(bmp)));
-                }
-                else 
-                {
-                    int index = imageRecognizer.Files.IndexOf(q);
-                    imageRecognizer.Files[index].Count++;
-                    imageRecognizer.Files[index].Photos.Add(new ImageRecognizerViewModel.Photo
-                    {
-                        Path = path,
-                        Pixels = ImagetoByte(bmp),
 
-                    });
-                }
                 if (l == null) //first time 
                 {
-                    pictires.Add(new Pictire(prediction.Label, path, bmp));
+                    imageRecognizer.Recognitions.Add(new Recognition
+                    {
+                        Title = prediction.Label,
+                        Count = 1,
+                        Photos = new ObservableCollection<Photo> { q }
+                    });
                 }
                 else
                 {
-                    int index = pictires.IndexOf(l);
-                    pictires[index].Count++;
-                    pictires[index].Photos.Add(new Photo
-                    {
-                        Path = path,
-                        Image = bmp
-                    });                       
+                    int index = imageRecognizer.Recognitions.IndexOf(l);
+                    imageRecognizer.Recognitions[index].Count++;
+                    imageRecognizer.Recognitions[index].Photos.Add((Photo)q);                  
                 }
 
                 imageRecognizer.ImagesCounter++;
@@ -214,9 +192,9 @@ namespace WPF
 
         private void ListViewSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if ((Pictire)Labels.SelectedItem != null)
+            if ((Recognition)Labels.SelectedItem != null)
             {
-                PictiresPanel.DataContext = (Pictire)Labels.SelectedItem;
+                PictiresPanel.DataContext = (Recognition)Labels.SelectedItem;
             }
         }
 
@@ -259,78 +237,120 @@ namespace WPF
             return data;
         }
 
+        private async Task<List<Photo>> ImageGenerator(string path)
+        {
+            string[] images = Directory.GetFiles(path);
+            Task<Photo>[] tasks = new Task<Photo>[images.Length];
+
+            for (int i = 0; i < images.Length; i++)
+            {
+                tasks[i] = Task<Photo>.Factory.StartNew((imagePath) =>
+                {
+                    string path = (string)imagePath;
+                    BitmapImage bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.UriSource = new Uri(path);
+                    bmp.DecodePixelHeight = 300;
+                    bmp.EndInit();
+                    bmp.Freeze();
+
+                    return new Photo
+                    {
+                        IsSavedInDataBase = false,
+                        Path = path,
+                        Pixels = ImagetoByte(bmp),
+                        Image = bmp
+                    };
+
+                }, images[i]);
+            }
+            await Task.WhenAll(tasks);
+
+            var t = Task<List<Photo>>.Factory.StartNew(() =>
+            {
+                List<Photo> a = new List<Photo>();
+                foreach (Task<Photo> t in tasks)
+                {
+                    a.Add(t.Result);
+                    Trace.WriteLine($"{t.Result.Path} {a.Count}");
+                }
+                return a;
+            });
+            return await t;
+        }
+
 //===========================================================================================//
 
     }
 
-    internal class Pictire : BaseViewModel
-    {
-        private string label;
-        public string Label
-        {
-            get
-            {
-                return label;
-            }
-            set
-            {
-                label = value;
-                OnPropertyChanged(nameof(Label));
-            }
-        }
+    //internal class Pictire : BaseViewModel
+    //{
+    //    private string label;
+    //    public string Label
+    //    {
+    //        get
+    //        {
+    //            return label;
+    //        }
+    //        set
+    //        {
+    //            label = value;
+    //            OnPropertyChanged(nameof(Label));
+    //        }
+    //    }
 
-        private int count;
-        public int Count
-        {
-            get
-            {
-                return count;
-            }
-            set
-            {
-                count = value;
-                OnPropertyChanged(nameof(Count));
-            }
-        }
+    //    private int count;
+    //    public int Count
+    //    {
+    //        get
+    //        {
+    //            return count;
+    //        }
+    //        set
+    //        {
+    //            count = value;
+    //            OnPropertyChanged(nameof(Count));
+    //        }
+    //    }
         
-        public ObservableCollection<Photo> Photos { get; set; }
+    //    public ObservableCollection<Photo> Photos { get; set; }
 
-        public Pictire(string s, string path, BitmapImage i)
-        {
-            Label = s;
-            Photos = new ObservableCollection<Photo>();
+    //    public Pictire(string s, string path, BitmapImage i)
+    //    {
+    //        Label = s;
+    //        Photos = new ObservableCollection<Photo>();
 
-            Photos.Add(new Photo
-            {
-                Path = path,
-                Image = i
-            });
-            count = 1;
-        }
+    //        Photos.Add(new Photo
+    //        {
+    //            Path = path,
+    //            Image = i
+    //        });
+    //        count = 1;
+    //    }
 
-        public Pictire() { }
+    //    public Pictire() { }
 
-        public override string ToString()
-        {
-            string s = "";
-            s += Label;
-            s += "  ";
-            s += Count.ToString();
-            foreach(var a in Photos)
-            {
-                s += a.Path + "\n";
-            }
-            return s;
-        }
+    //    public override string ToString()
+    //    {
+    //        string s = "";
+    //        s += Label;
+    //        s += "  ";
+    //        s += Count.ToString();
+    //        foreach(var a in Photos)
+    //        {
+    //            s += a.Path + "\n";
+    //        }
+    //        return s;
+    //    }
 
-    }
-    internal struct Photo
-    {
-        public string Path { get; set; }
-        public BitmapImage Image { get; set; }
+    //}
+    //internal struct Photo
+    //{
+    //    public string Path { get; set; }
+    //    public BitmapImage Image { get; set; }
 
-    }
+    //}
 
-    internal class PictireObservable : ObservableCollection<Pictire>, INotifyPropertyChanged { }
+    //internal class PictireObservable : ObservableCollection<Pictire>, INotifyPropertyChanged { }
 }
 

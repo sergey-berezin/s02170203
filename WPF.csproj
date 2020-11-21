@@ -8,21 +8,25 @@
 
   <ItemGroup>
     <Compile Remove="DataBaseSetup\**" />
+    <Compile Remove="Gasket\**" />
     <Compile Remove="ImageRecognizerVM\**" />
     <Compile Remove="ImageRecognizer\**" />
     <Compile Remove="ImagerRecognizerVM\**" />
     <Compile Remove="samples\**" />
     <EmbeddedResource Remove="DataBaseSetup\**" />
+    <EmbeddedResource Remove="Gasket\**" />
     <EmbeddedResource Remove="ImageRecognizerVM\**" />
     <EmbeddedResource Remove="ImageRecognizer\**" />
     <EmbeddedResource Remove="ImagerRecognizerVM\**" />
     <EmbeddedResource Remove="samples\**" />
     <None Remove="DataBaseSetup\**" />
+    <None Remove="Gasket\**" />
     <None Remove="ImageRecognizerVM\**" />
     <None Remove="ImageRecognizer\**" />
     <None Remove="ImagerRecognizerVM\**" />
     <None Remove="samples\**" />
     <Page Remove="DataBaseSetup\**" />
+    <Page Remove="Gasket\**" />
     <Page Remove="ImageRecognizerVM\**" />
     <Page Remove="ImageRecognizer\**" />
     <Page Remove="ImagerRecognizerVM\**" />
@@ -47,6 +51,7 @@
   <ItemGroup>
     <ProjectReference Include="DataBaseSetup\DataBaseSetup.csproj" />
     <ProjectReference Include="ImageRecognizerVM\ImageRecognizerVM.csproj" />
+    <ProjectReference Include="ImageRecognizer\ImageRecognizer.csproj" />
   </ItemGroup>
 
   <ItemGroup>

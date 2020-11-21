@@ -9,12 +9,90 @@ using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.ObjectModel;
 
 namespace ImageRecognizerViewModel
 {
+    public class Recognition : BaseViewModel
+    {
+        private string title;
+        public string Title
+        {
+            get
+            {
+                return title;
+            }
+            set
+            {
+                title = value;
+                OnPropertyChanged(nameof(Title));
+            }
+        }
+
+        private int count;
+        public int Count
+        {
+            get
+            {
+                return count;
+            }
+            set
+            {
+                count = value;
+                OnPropertyChanged(nameof(Count));
+            }
+        }
+        
+        public ObservableCollection<Photo> Photos { get; set; }
+
+        public Recognition(string s, string path, Object i)
+        {
+            Title = s;
+            Photos = new ObservableCollection<Photo>();
+
+            Photos.Add(new Photo
+            {
+                Path = path,
+                Image = i
+            });
+            count = 1;
+        }
+
+        public Recognition() { }
+
+        public override string ToString()
+        {
+            string s = "";
+            s += Title;
+            s += "  ";
+            s += Count.ToString() + "  ";
+            foreach (var a in Photos)
+            {
+                s += a.Path + "\n";
+            }
+            return s;
+        }
+
+    }
+    public class Photo
+    {
+        public bool IsSavedInDataBase { get; set; } = false;
+        public string Path { get; set; }
+        public byte[] Pixels { get; set; } = null;
+        public object Image { get; set; }
+    }
+    
     public class ImageRecognizerVM : BaseViewModel
     {
-        public List<FileBlank> Files = new List<FileBlank>();
+        public ObservableCollection<Recognition> Recognitions { get; set; }
+
+        public List<Photo> Photos { get; set; }
+
+        public ImageRecognizerVM()
+        {
+            Recognitions = new ObservableCollection<Recognition>();
+            Photos = new List<Photo>();
+        }
 
 //===========================================================================================//
 
@@ -115,7 +193,7 @@ namespace ImageRecognizerViewModel
 
         public async Task Start()
         {
-            IsRunning = true;            
+            //IsRunning = true;            
             string[] images = Directory.GetFiles(ImagesPath);
 
             using (var db = new Context())
@@ -128,9 +206,27 @@ namespace ImageRecognizerViewModel
 
                     if (q != null)
                     {
-                        //db.Entry(q).Reference(a => a.Pixels).Load();
-                        //byte [] photo = 
-                        images[i] = null;
+                        db.Entry(q).Reference(a => a.Pixels).Load();
+
+                        var a = (from b in Photos
+                                 where q.Path == b.Path
+                                 select b.Pixels).FirstOrDefault();
+
+                        if(q.Pixels.Pixels.Length == a.Length)
+                        {
+                            for(int j = 0; j < a.Length; j++)
+                            {
+                                if(q.Pixels.Pixels[j] != a[j])
+                                {
+                                    break;
+                                }
+                                if(j == a.Length - 1)
+                                {
+                                    images[i] = null;
+                                    Trace.WriteLine("BBB");
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -140,40 +236,52 @@ namespace ImageRecognizerViewModel
                       select a).ToArray();
 
             ImagesCount = images.Length;
-            Trace.WriteLine(ImagesCount);
             ImagesCounter = 0;
             ImageRecognizer.onnxModelPath = OnnxModelPath;
-          
             await ImageRecognizer.RecognitionAsync(images);
 
             using (var db = new Context())
             {
-                foreach (var r in Files)
+                foreach (var r in Recognitions)
                 {
+                    var rec = (from b in db.Recognitions
+                               where r.Title == b.Title
+                               select b).FirstOrDefault();
+                   
+                    if (rec == null)
+                    {
+                        db.Recognitions.Add(new DataBaseSetup.Recognition
+                        {
+                            Title = r.Title,
+                        });
+                        db.SaveChanges();
+
+                        rec = (from b in db.Recognitions
+                               where b.Title == r.Title
+                               select b).FirstOrDefault();
+                    }
+
                     List<DataBaseSetup.Photo> a = new List<DataBaseSetup.Photo>();
                     foreach (var photo in r.Photos)
                     {
-                        a.Add(new DataBaseSetup.Photo
+                        if (!photo.IsSavedInDataBase)
                         {
-                            Path = photo.Path,
-                            Pixels = new Blob
+                            a.Add(new DataBaseSetup.Photo
                             {
-                                Pixels = photo.Pixels
-                            }
-                        });
+                                Path = photo.Path,
+                                Pixels = new Blob
+                                {
+                                    Pixels = photo.Pixels
+                                },
+                                RecognitionId = rec.Id
+                            });
+                        }
+                        photo.IsSavedInDataBase = true;
                     }
-
-                    db.Recognitions.Add(new Recognition
-                    {
-                        Title = r.Recognition,
-                        Count = r.Count,
-                        Photo = a
-                    });
+                    db.Photos.AddRange(a);
                 }
                 db.SaveChanges();
             }
-
-            Files.Clear();
             IsRunning = false;
         }
 
@@ -183,31 +291,46 @@ namespace ImageRecognizerViewModel
             await ImageRecognizer.CancelRecognitionAsync();
             using (var db = new Context())
             {
-                foreach (var r in Files)
+                foreach (var r in Recognitions)
                 {
+                    var rec = (from b in db.Recognitions
+                               where r.Title == b.Title
+                               select b).FirstOrDefault();
+
+                    if (rec == null)
+                    {
+                        db.Recognitions.Add(new DataBaseSetup.Recognition
+                        {
+                            Title = r.Title,
+                        });
+                        db.SaveChanges();
+
+                        rec = (from b in db.Recognitions
+                               where b.Title == r.Title
+                               select b).FirstOrDefault();
+                    }
+
                     List<DataBaseSetup.Photo> a = new List<DataBaseSetup.Photo>();
                     foreach (var photo in r.Photos)
                     {
-                        a.Add(new DataBaseSetup.Photo
+                        if (!photo.IsSavedInDataBase)
                         {
-                            Path = photo.Path,
-                            Pixels = new Blob
+                            a.Add(new DataBaseSetup.Photo
                             {
-                                Pixels = photo.Pixels
-                            }
-                        });
+                                Path = photo.Path,
+                                Pixels = new Blob
+                                {
+                                    Pixels = photo.Pixels
+                                },
+                                RecognitionId = rec.Id
+                            });
+                        }
+                        photo.IsSavedInDataBase = true;
                     }
-
-                    db.Recognitions.Add(new Recognition
-                    {
-                        Title = r.Recognition,
-                        Count = r.Count,
-                        Photo = a
-                    });
+                    db.Photos.AddRange(a);
                 }
                 db.SaveChanges();
             }
-            Files.Clear();
             IsStopping = false;
         }
 
@@ -223,6 +346,9 @@ namespace ImageRecognizerViewModel
         }
 
 //===========================================================================================//
+
+
+//===========================================================================================// 
     }
 
     public class BaseViewModel : INotifyPropertyChanged
@@ -233,29 +359,5 @@ namespace ImageRecognizerViewModel
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-    }
-
-    public class FileBlank
-    {
-        public string Recognition;
-        public int Count;
-        public List<Photo> Photos;
-
-        public FileBlank(string s, string path, byte[] i)
-        {
-            Recognition = s;
-            Count = 1;
-            Photos = new List<Photo>();
-            Photos.Add(new Photo
-            {
-                Path = path,
-                Pixels = i
-            });
-        }
-    }
-    public struct Photo
-    {
-        public string Path;
-        public byte[] Pixels;
     }
 }

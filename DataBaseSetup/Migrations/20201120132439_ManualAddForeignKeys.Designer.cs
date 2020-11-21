@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataBaseSetup.Migrations
 {
     [DbContext(typeof(Context))]
-    [Migration("20201117164625_InitialMigration")]
-    partial class InitialMigration
+    [Migration("20201120132439_ManualAddForeignKeys")]
+    partial class ManualAddForeignKeys
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -28,10 +28,16 @@ namespace DataBaseSetup.Migrations
                         .HasColumnType("int")
                         .UseIdentityColumn();
 
+                    b.Property<int>("PhotoId")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("Pixels")
                         .HasColumnType("varbinary(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PhotoId")
+                        .IsUnique();
 
                     b.ToTable("Blobs");
                 });
@@ -46,15 +52,10 @@ namespace DataBaseSetup.Migrations
                     b.Property<string>("Path")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("PixelsId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("RecognitionId")
+                    b.Property<int>("RecognitionId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PixelsId");
 
                     b.HasIndex("RecognitionId");
 
@@ -79,16 +80,30 @@ namespace DataBaseSetup.Migrations
                     b.ToTable("Recognitions");
                 });
 
+            modelBuilder.Entity("DataBaseSetup.Blob", b =>
+                {
+                    b.HasOne("DataBaseSetup.Photo", "Photo")
+                        .WithOne("Pixels")
+                        .HasForeignKey("DataBaseSetup.Blob", "PhotoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Photo");
+                });
+
             modelBuilder.Entity("DataBaseSetup.Photo", b =>
                 {
-                    b.HasOne("DataBaseSetup.Blob", "Pixels")
-                        .WithMany()
-                        .HasForeignKey("PixelsId");
-
-                    b.HasOne("DataBaseSetup.Recognition", null)
+                    b.HasOne("DataBaseSetup.Recognition", "Recognition")
                         .WithMany("Photo")
-                        .HasForeignKey("RecognitionId");
+                        .HasForeignKey("RecognitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
+                    b.Navigation("Recognition");
+                });
+
+            modelBuilder.Entity("DataBaseSetup.Photo", b =>
+                {
                     b.Navigation("Pixels");
                 });
 

@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageRecognizer", "ImageRec
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageRecognizerVM", "ImageRecognizerVM\ImageRecognizerVM.csproj", "{F1F13615-290C-4A46-AB15-DC6E6BD50829}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataBaseSetup", "DataBaseSetup\DataBaseSetup.csproj", "{1F766EB2-AB4B-4FE9-AABF-5BBF0ABD362B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataBaseSetup", "DataBaseSetup\DataBaseSetup.csproj", "{1F766EB2-AB4B-4FE9-AABF-5BBF0ABD362B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gasket", "Gasket\Gasket.csproj", "{46BF350B-45B0-44D1-93CB-7CBA5D36FD90}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{1F766EB2-AB4B-4FE9-AABF-5BBF0ABD362B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F766EB2-AB4B-4FE9-AABF-5BBF0ABD362B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1F766EB2-AB4B-4FE9-AABF-5BBF0ABD362B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46BF350B-45B0-44D1-93CB-7CBA5D36FD90}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46BF350B-45B0-44D1-93CB-7CBA5D36FD90}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46BF350B-45B0-44D1-93CB-7CBA5D36FD90}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46BF350B-45B0-44D1-93CB-7CBA5D36FD90}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
