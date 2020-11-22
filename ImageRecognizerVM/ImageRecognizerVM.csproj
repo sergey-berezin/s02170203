@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DataBaseSetup\DataBaseSetup.csproj" />
-    <ProjectReference Include="..\Gasket\Gasket.csproj" />
     <ProjectReference Include="..\ImageRecognizer\ImageRecognizer.csproj" />
   </ItemGroup>
 
