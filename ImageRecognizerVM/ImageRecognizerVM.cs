@@ -6,10 +6,9 @@ using ImageRecognition;
 using System.Threading.Tasks;
 using DataBaseSetup;
 using System.Linq;
-using System.Diagnostics;
 using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.ObjectModel;
+using System.Drawing;
 
 namespace ImageRecognizerViewModel
 {
@@ -42,36 +41,10 @@ namespace ImageRecognizerViewModel
                 OnPropertyChanged(nameof(Count));
             }
         }
-        
+
         public ObservableCollection<Photo> Photos { get; set; }
 
-        public Recognition(string s, string path, Object i)
-        {
-            Title = s;
-            Photos = new ObservableCollection<Photo>();
-
-            Photos.Add(new Photo
-            {
-                Path = path,
-                Image = i
-            });
-            count = 1;
-        }
-
         public Recognition() { }
-
-        public override string ToString()
-        {
-            string s = "";
-            s += Title;
-            s += "  ";
-            s += Count.ToString() + "  ";
-            foreach (var a in Photos)
-            {
-                s += a.Path + "\n";
-            }
-            return s;
-        }
 
     }
     public class Photo
@@ -96,8 +69,27 @@ namespace ImageRecognizerViewModel
 
 //===========================================================================================//
 
-        public string ControlButtonContent { get; private set; } = "Start";
-        public bool ControlButtonEnabled { get; private set; } = true;
+        public string ControlButtonContent
+        {
+            get
+            {
+                return IsRunning ? "Stop" : "Start";
+            }
+        }
+        public bool ControlButtonEnabled
+        {
+            get
+            {
+                return !IsStopping;
+            }
+        }
+        public bool ClearButtonEnabled
+        {
+            get
+            {
+                return !IsClearing;
+            }        
+        }
 
 //===========================================================================================// 
 
@@ -166,7 +158,6 @@ namespace ImageRecognizerViewModel
             }
             set
             {
-                ControlButtonContent = value ? "Stop" : "Start";
                 isRunning = value;
                 OnPropertyChanged(nameof(IsRunning));
                 OnPropertyChanged(nameof(ControlButtonContent));
@@ -182,10 +173,24 @@ namespace ImageRecognizerViewModel
             }
             set
             {
-                ControlButtonEnabled = value ? false : true;
                 isStopping = value;
                 OnPropertyChanged(nameof(IsStopping));
                 OnPropertyChanged(nameof(ControlButtonEnabled));
+            }
+        }
+
+        public bool isClearing = false;
+        public bool IsClearing
+        {
+            get
+            {
+                return isClearing;
+            }
+            set
+            {
+                isClearing = value;
+                OnPropertyChanged(nameof(IsClearing));
+                OnPropertyChanged(nameof(ClearButtonEnabled));
             }
         }
 
@@ -194,148 +199,35 @@ namespace ImageRecognizerViewModel
         public async Task Start()
         {
             //IsRunning = true;            
-            string[] images = Directory.GetFiles(ImagesPath);
-
-            using (var db = new Context())
-            {
-                for (int i = 0; i < images.Length; i++)
-                {
-                    var q = (from a in db.Photos
-                             where a.Path == images[i]
-                             select a).FirstOrDefault();
-
-                    if (q != null)
-                    {
-                        db.Entry(q).Reference(a => a.Pixels).Load();
-
-                        var a = (from b in Photos
-                                 where q.Path == b.Path
-                                 select b.Pixels).FirstOrDefault();
-
-                        if(q.Pixels.Pixels.Length == a.Length)
-                        {
-                            for(int j = 0; j < a.Length; j++)
-                            {
-                                if(q.Pixels.Pixels[j] != a[j])
-                                {
-                                    break;
-                                }
-                                if(j == a.Length - 1)
-                                {
-                                    images[i] = null;
-                                    Trace.WriteLine("BBB");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            images = (from a in images
-                      where a != null
-                      select a).ToArray();
+            string[] images = await RemoveRecognizedImages();
 
             ImagesCount = images.Length;
             ImagesCounter = 0;
             ImageRecognizer.onnxModelPath = OnnxModelPath;
+
             await ImageRecognizer.RecognitionAsync(images);
 
-            using (var db = new Context())
-            {
-                foreach (var r in Recognitions)
-                {
-                    var rec = (from b in db.Recognitions
-                               where r.Title == b.Title
-                               select b).FirstOrDefault();
-                   
-                    if (rec == null)
-                    {
-                        db.Recognitions.Add(new DataBaseSetup.Recognition
-                        {
-                            Title = r.Title,
-                        });
-                        db.SaveChanges();
-
-                        rec = (from b in db.Recognitions
-                               where b.Title == r.Title
-                               select b).FirstOrDefault();
-                    }
-
-                    List<DataBaseSetup.Photo> a = new List<DataBaseSetup.Photo>();
-                    foreach (var photo in r.Photos)
-                    {
-                        if (!photo.IsSavedInDataBase)
-                        {
-                            a.Add(new DataBaseSetup.Photo
-                            {
-                                Path = photo.Path,
-                                Pixels = new Blob
-                                {
-                                    Pixels = photo.Pixels
-                                },
-                                RecognitionId = rec.Id
-                            });
-                        }
-                        photo.IsSavedInDataBase = true;
-                    }
-                    db.Photos.AddRange(a);
-                }
-                db.SaveChanges();
-            }
+            await Save();
+            Photos.Clear();
             IsRunning = false;
         }
 
         public async Task Stop()
         {
             IsStopping = true;           
+            
             await ImageRecognizer.CancelRecognitionAsync();
-            using (var db = new Context())
-            {
-                foreach (var r in Recognitions)
-                {
-                    var rec = (from b in db.Recognitions
-                               where r.Title == b.Title
-                               select b).FirstOrDefault();
+            await Save();
 
-                    if (rec == null)
-                    {
-                        db.Recognitions.Add(new DataBaseSetup.Recognition
-                        {
-                            Title = r.Title,
-                        });
-                        db.SaveChanges();
-
-                        rec = (from b in db.Recognitions
-                               where b.Title == r.Title
-                               select b).FirstOrDefault();
-                    }
-
-                    List<DataBaseSetup.Photo> a = new List<DataBaseSetup.Photo>();
-                    foreach (var photo in r.Photos)
-                    {
-                        if (!photo.IsSavedInDataBase)
-                        {
-                            a.Add(new DataBaseSetup.Photo
-                            {
-                                Path = photo.Path,
-                                Pixels = new Blob
-                                {
-                                    Pixels = photo.Pixels
-                                },
-                                RecognitionId = rec.Id
-                            });
-                        }
-                        photo.IsSavedInDataBase = true;
-                    }
-                    db.Photos.AddRange(a);
-                }
-                db.SaveChanges();
-            }
+            Photos.Clear();
             IsStopping = false;
         }
 
         public async Task Clear()
         {
+            IsClearing = true;
+            Recognitions.Clear();
+            Photos.Clear();
             using (var db = new Context())
             {
                 db.Recognitions.RemoveRange(db.Recognitions);
@@ -343,10 +235,105 @@ namespace ImageRecognizerViewModel
                 db.Blobs.RemoveRange(db.Blobs);
                 await db.SaveChangesAsync();
             }
+            IsClearing = false;
         }
 
 //===========================================================================================//
 
+        private async Task Save()
+        {
+            await Task.Run(async () =>
+            {
+                using (var db = new Context())
+                {
+                    foreach (var r in Recognitions)
+                    {
+                        var rec = (from b in db.Recognitions
+                                   where r.Title == b.Title
+                                   select b).FirstOrDefault();
+
+                        if (rec == null)
+                        {
+                            db.Recognitions.Add(new DataBaseSetup.Recognition
+                            {
+                                Title = r.Title,
+                            });
+                            await db.SaveChangesAsync();
+
+                            rec = (from b in db.Recognitions
+                                   where b.Title == r.Title
+                                   select b).FirstOrDefault();
+                        }
+
+                        List<DataBaseSetup.Photo> a = new List<DataBaseSetup.Photo>();
+                        foreach (var photo in r.Photos)
+                        {
+                            if (!photo.IsSavedInDataBase)
+                            {
+                                a.Add(new DataBaseSetup.Photo
+                                {
+                                    Path = photo.Path,
+                                    Pixels = new Blob
+                                    {
+                                        Pixels = photo.Pixels
+                                    },
+                                    RecognitionId = rec.Id
+                                });
+                            }
+                            photo.IsSavedInDataBase = true;
+                        }
+                        db.Photos.AddRange(a);
+                    }
+                    await db.SaveChangesAsync();
+                }
+            });
+        }
+    
+        private async Task<string[]> RemoveRecognizedImages()
+        {
+            return await Task.Run(() =>
+            {
+                string[] images = Directory.GetFiles(ImagesPath);
+
+                using (var db = new Context())
+                {
+                    for (int i = 0; i < images.Length; i++)
+                    {
+                        var q = (from a in db.Photos
+                                 where a.Path == images[i]
+                                 select a).FirstOrDefault();
+
+                        if (q != null)
+                        {
+                            db.Entry(q).Reference(a => a.Pixels).Load();
+
+                            var a = (from b in Photos
+                                     where q.Path == b.Path
+                                     select b.Pixels).FirstOrDefault();
+
+                            if (q.Pixels.Pixels.Length == a.Length)
+                            {
+                                for (int j = 0; j < a.Length; j++)
+                                {
+                                    if (q.Pixels.Pixels[j] != a[j])
+                                    {
+                                        break;
+                                    }
+                                    if (j == a.Length - 1)
+                                    {
+                                        images[i] = null;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return images = (from a in images
+                                 where a != null
+                                 select a).ToArray();
+            });
+        }
 
 //===========================================================================================// 
     }
