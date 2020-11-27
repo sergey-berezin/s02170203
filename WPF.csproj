@@ -50,7 +50,6 @@
 
   <ItemGroup>
     <ProjectReference Include="DataBaseSetup\DataBaseSetup.csproj" />
-    <ProjectReference Include="ImageRecognizerVM\ImageRecognizerVM.csproj" />
     <ProjectReference Include="ImageRecognizer\ImageRecognizer.csproj" />
   </ItemGroup>
 

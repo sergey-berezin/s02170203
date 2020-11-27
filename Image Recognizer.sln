@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPF", "WPF.csproj", "{540BC
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageRecognizer", "ImageRecognizer\ImageRecognizer.csproj", "{966B132E-5320-4986-A3AD-A9835838E075}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageRecognizerVM", "ImageRecognizerVM\ImageRecognizerVM.csproj", "{F1F13615-290C-4A46-AB15-DC6E6BD50829}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataBaseSetup", "DataBaseSetup\DataBaseSetup.csproj", "{1F766EB2-AB4B-4FE9-AABF-5BBF0ABD362B}"
 EndProject
 Global
@@ -25,10 +23,6 @@ Global
 		{966B132E-5320-4986-A3AD-A9835838E075}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{966B132E-5320-4986-A3AD-A9835838E075}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{966B132E-5320-4986-A3AD-A9835838E075}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F1F13615-290C-4A46-AB15-DC6E6BD50829}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F1F13615-290C-4A46-AB15-DC6E6BD50829}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F1F13615-290C-4A46-AB15-DC6E6BD50829}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F1F13615-290C-4A46-AB15-DC6E6BD50829}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1F766EB2-AB4B-4FE9-AABF-5BBF0ABD362B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1F766EB2-AB4B-4FE9-AABF-5BBF0ABD362B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F766EB2-AB4B-4FE9-AABF-5BBF0ABD362B}.Release|Any CPU.ActiveCfg = Release|Any CPU
