@@ -49,8 +49,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="DataBaseSetup\DataBaseSetup.csproj" />
-    <ProjectReference Include="ImageRecognizer\ImageRecognizer.csproj" />
+    <ProjectReference Include="..\Server\DataBaseSetup\DataBaseSetup.csproj" />
+    <ProjectReference Include="..\Server\ImageRecognizer\ImageRecognizer.csproj" />
   </ItemGroup>
 
   <ItemGroup>
