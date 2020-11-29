@@ -7,33 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="DataBaseSetup\**" />
-    <Compile Remove="Gasket\**" />
-    <Compile Remove="ImageRecognizerVM\**" />
-    <Compile Remove="ImageRecognizer\**" />
-    <Compile Remove="ImagerRecognizerVM\**" />
-    <Compile Remove="samples\**" />
-    <EmbeddedResource Remove="DataBaseSetup\**" />
-    <EmbeddedResource Remove="Gasket\**" />
-    <EmbeddedResource Remove="ImageRecognizerVM\**" />
-    <EmbeddedResource Remove="ImageRecognizer\**" />
-    <EmbeddedResource Remove="ImagerRecognizerVM\**" />
-    <EmbeddedResource Remove="samples\**" />
-    <None Remove="DataBaseSetup\**" />
-    <None Remove="Gasket\**" />
-    <None Remove="ImageRecognizerVM\**" />
-    <None Remove="ImageRecognizer\**" />
-    <None Remove="ImagerRecognizerVM\**" />
-    <None Remove="samples\**" />
-    <Page Remove="DataBaseSetup\**" />
-    <Page Remove="Gasket\**" />
-    <Page Remove="ImageRecognizerVM\**" />
-    <Page Remove="ImageRecognizer\**" />
-    <Page Remove="ImagerRecognizerVM\**" />
-    <Page Remove="samples\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove=".gitattributes" />
     <None Remove=".gitignore" />
     <None Remove="README.md" />
@@ -45,12 +18,12 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Server\DataBaseSetup\DataBaseSetup.csproj" />
-    <ProjectReference Include="..\Server\ImageRecognizer\ImageRecognizer.csproj" />
+    <ProjectReference Include="..\Contracts\Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

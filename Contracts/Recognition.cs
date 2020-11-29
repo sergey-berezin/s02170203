@@ -1,9 +1,7 @@
 ﻿
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Windows.Media.Imaging;
 
-namespace WPF
+namespace Contracts
 {
     public class Recognition : BaseViewModel
     {
@@ -36,23 +34,5 @@ namespace WPF
         }
 
         public ObservableCollection<Photo> Photos { get; set; }
-
-
-    }
-    public class Photo
-    {
-        public bool IsSavedInDataBase { get; set; } = false;
-        public string Path { get; set; }
-        public byte[] Pixels { get; set; } = null;
-        public BitmapImage Image { get; set; }
-    }
-    public class BaseViewModel : INotifyPropertyChanged
-    {
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected virtual void OnPropertyChanged(string propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
     }
 }

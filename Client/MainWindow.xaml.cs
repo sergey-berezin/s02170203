@@ -6,7 +6,8 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.IO;
-
+using Contracts;
+using System.Collections.ObjectModel;
 
 namespace WPF
 {
@@ -16,8 +17,7 @@ namespace WPF
         private ImageRecognizerVM imageRecognizer;
 
         public MainWindow()
-        {
-                       
+        {                       
             imageRecognizer = new ImageRecognizerVM();
             InitializeComponent();                   
             DataContext = imageRecognizer;
@@ -56,54 +56,64 @@ namespace WPF
         
         private async void Control(object sender, ExecutedRoutedEventArgs e)
         {
-            if (!imageRecognizer.IsRunning) //start recognition
-            {
-                try
-                {
-                    await imageRecognizer.StartAsync();
-                }
+            //if (!imageRecognizer.IsRunning) //start recognition
+            //{
+            //    try
+            //    {
+            //        await imageRecognizer.StartAsync();
+            //    }
 
-                catch (DirectoryNotFoundException s)
-                {
-                    MessageBox.Show($"{s.Message}", "Ошибка");
-                }
-                catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
-                {
-                    MessageBox.Show($"{s.Message}", "Ошибка");
-                }
-                catch (Exception s)
-                {
-                    MessageBox.Show($"{s.Message}", "Ошибка");
-                }
-                finally
-                {
-                    imageRecognizer.IsRunning = false;
-                    imageRecognizer.IsStopping = false;
-                }
+            //    catch (DirectoryNotFoundException s)
+            //    {
+            //        MessageBox.Show($"{s.Message}", "Ошибка");
+            //    }
+            //    //catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
+            //    //{
+            //    //    MessageBox.Show($"{s.Message}", "Ошибка");
+            //    //}
+            //    catch (Exception s)
+            //    {
+            //        MessageBox.Show($"{s.Message}", "Ошибка");
+            //    }
+            //    finally
+            //    {
+            //        imageRecognizer.IsRunning = false;
+            //        imageRecognizer.IsStopping = false;
+            //    }
                 
-            }
-            else //stop recognition
-            {
-                try
-                {
-                    await imageRecognizer.StopAsync();
-                }
-                catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
-                {
-                    MessageBox.Show($"{s.Message}", "Ошибка");
-                }
-                finally
-                {
-                    imageRecognizer.IsRunning = false;
-                    imageRecognizer.IsStopping = false;
-                }
-            }
+            //}
+            //else //stop recognition
+            //{
+            //    try
+            //    {
+            //        await imageRecognizer.StopAsync();
+            //    }
+            //    //catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
+            //    //{
+            //    //    MessageBox.Show($"{s.Message}", "Ошибка");
+            //    //}
+            //    finally
+            //    {
+            //        imageRecognizer.IsRunning = false;
+            //        imageRecognizer.IsStopping = false;
+            //    }
+            //}
         }
 
         private async void ClearStorage(object sender, ExecutedRoutedEventArgs e)
         {
-            PictiresPanel.DataContext = null;
-            await imageRecognizer.ClearAsync();
+
+            //imageRecognizer.Recognitions.Add(new Recognition
+            //{
+            //    Count = 1,
+            //    Title = "DSD",
+            //    Photos = null,
+                
+            //});
+            
+            await imageRecognizer.Load();
+            //PictiresPanel.DataContext = null;
+            //await imageRecognizer.ClearAsync();
         }       
 
 //===========================================================================================//
