@@ -7,12 +7,6 @@ using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.IO;
 using Contracts;
-using System.Collections.ObjectModel;
-using Newtonsoft.Json;
-using System.Net.Http;
-using System.Text;
-using System.Diagnostics;
-using Microsoft.AspNetCore.SignalR.Client;
 
 namespace WPF
 {
@@ -79,10 +73,6 @@ namespace WPF
                 {
                     MessageBox.Show($"{s.Message}", "Ошибка");
                 }
-                //catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
-                //{
-                //    MessageBox.Show($"{s.Message}", "Ошибка");
-                //}
                 catch (Exception s)
                 {
                     MessageBox.Show($"{s.Message}", "Ошибка");
@@ -100,10 +90,10 @@ namespace WPF
                 {
                     await imageRecognizer.StopAsync();
                 }
-                //catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
-                //{
-                //    MessageBox.Show($"{s.Message}", "Ошибка");
-                //}
+                catch (Exception s)
+                {
+                    MessageBox.Show($"{s.Message}", "Ошибка");
+                }
                 finally
                 {
                     imageRecognizer.IsRunning = false;
@@ -114,9 +104,20 @@ namespace WPF
 
         private async void ClearStorage(object sender, ExecutedRoutedEventArgs e)
         {
-            //await connection.SendAsync("Send","AAAAAAAAAA");
             PictiresPanel.DataContext = null;
-            await imageRecognizer.ClearAsync();
+            try
+            {
+                await imageRecognizer.ClearAsync();
+            }
+            catch (Exception s)
+            {
+                MessageBox.Show($"{s.Message}", "Ошибка");
+            }
+            finally
+            {
+                imageRecognizer.IsRunning = false;
+                imageRecognizer.IsStopping = false;
+            }
         }       
 
 //===========================================================================================//

@@ -1,16 +1,11 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Contracts;
-using System.Diagnostics;
-//using ImageRecognition;
-using Microsoft.AspNetCore.SignalR;
 
 namespace Server.Controllers
 {
@@ -59,10 +54,7 @@ namespace Server.Controllers
         public async Task<List<Recognition>> StartAsync(StartOptions rec)
         {
             Console.WriteLine($"START {rec.Images.Count}");
-            //foreach(var a in rec.Images)
-            //{
-            //    Console.WriteLine($"{a.Path}");
-            //}
+
             ImageRecognition.ImageRecognizer.onnxModelPath = rec.Onnx;
             Program.Photos = rec.Images;
             await ImageRecognition.ImageRecognizer.RecognitionAsync(from i in rec.Images
