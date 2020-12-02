@@ -58,7 +58,7 @@ namespace WPF
             }
         }
 
-        //===========================================================================================//
+//===========================================================================================//
 
         private async void Control(object sender, ExecutedRoutedEventArgs e)
         {
@@ -101,7 +101,6 @@ namespace WPF
                 }
             }
         }
-
         private async void ClearStorage(object sender, ExecutedRoutedEventArgs e)
         {
             PictiresPanel.DataContext = null;
@@ -118,8 +117,23 @@ namespace WPF
                 imageRecognizer.IsRunning = false;
                 imageRecognizer.IsStopping = false;
             }
-        }       
-
+        }
+        private async void LoadImages(object sender, ExecutedRoutedEventArgs e)
+        {
+            try
+            {
+                await imageRecognizer.LoadAsync();
+            }
+            catch (Exception s)
+            {
+                MessageBox.Show($"{s.Message}", "Ошибка");
+            }
+            finally
+            {
+                imageRecognizer.IsRunning = false;
+                imageRecognizer.IsStopping = false;
+            }
+        }
 //===========================================================================================//
 
         private void ListViewSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -129,6 +143,8 @@ namespace WPF
                 PictiresPanel.DataContext = (Recognition)Labels.SelectedItem;
             }
         }
+
+
 
 //===========================================================================================//
     }
