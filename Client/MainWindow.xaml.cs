@@ -8,6 +8,11 @@ using Microsoft.WindowsAPICodePack.Dialogs;
 using System.IO;
 using Contracts;
 using System.Collections.ObjectModel;
+using Newtonsoft.Json;
+using System.Net.Http;
+using System.Text;
+using System.Diagnostics;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace WPF
 {
@@ -15,9 +20,16 @@ namespace WPF
     {
 
         private ImageRecognizerVM imageRecognizer;
-
+        //private HubConnection connection; 
+        
         public MainWindow()
-        {                       
+        {
+            //connection = new HubConnectionBuilder()
+            //    .WithUrl("http://localhost:5000/add")
+            //    .Build();
+            //connection.On<string>("Add", msg => Trace.WriteLine($"AAAAAAAAA{msg}"));
+            //connection.StartAsync();
+
             imageRecognizer = new ImageRecognizerVM();
             InitializeComponent();                   
             DataContext = imageRecognizer;
@@ -52,68 +64,59 @@ namespace WPF
             }
         }
 
-//===========================================================================================//
-        
+        //===========================================================================================//
+
         private async void Control(object sender, ExecutedRoutedEventArgs e)
         {
-            //if (!imageRecognizer.IsRunning) //start recognition
-            //{
-            //    try
-            //    {
-            //        await imageRecognizer.StartAsync();
-            //    }
+            if (!imageRecognizer.IsRunning) //start recognition
+            {
+                try
+                {
+                    await imageRecognizer.StartAsync();
+                }
 
-            //    catch (DirectoryNotFoundException s)
-            //    {
-            //        MessageBox.Show($"{s.Message}", "Ошибка");
-            //    }
-            //    //catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
-            //    //{
-            //    //    MessageBox.Show($"{s.Message}", "Ошибка");
-            //    //}
-            //    catch (Exception s)
-            //    {
-            //        MessageBox.Show($"{s.Message}", "Ошибка");
-            //    }
-            //    finally
-            //    {
-            //        imageRecognizer.IsRunning = false;
-            //        imageRecognizer.IsStopping = false;
-            //    }
-                
-            //}
-            //else //stop recognition
-            //{
-            //    try
-            //    {
-            //        await imageRecognizer.StopAsync();
-            //    }
-            //    //catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
-            //    //{
-            //    //    MessageBox.Show($"{s.Message}", "Ошибка");
-            //    //}
-            //    finally
-            //    {
-            //        imageRecognizer.IsRunning = false;
-            //        imageRecognizer.IsStopping = false;
-            //    }
-            //}
+                catch (DirectoryNotFoundException s)
+                {
+                    MessageBox.Show($"{s.Message}", "Ошибка");
+                }
+                //catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
+                //{
+                //    MessageBox.Show($"{s.Message}", "Ошибка");
+                //}
+                catch (Exception s)
+                {
+                    MessageBox.Show($"{s.Message}", "Ошибка");
+                }
+                finally
+                {
+                    imageRecognizer.IsRunning = false;
+                    imageRecognizer.IsStopping = false;
+                }
+
+            }
+            else //stop recognition
+            {
+                try
+                {
+                    await imageRecognizer.StopAsync();
+                }
+                //catch (Microsoft.ML.OnnxRuntime.OnnxRuntimeException s)
+                //{
+                //    MessageBox.Show($"{s.Message}", "Ошибка");
+                //}
+                finally
+                {
+                    imageRecognizer.IsRunning = false;
+                    imageRecognizer.IsStopping = false;
+                }
+            }
         }
 
         private async void ClearStorage(object sender, ExecutedRoutedEventArgs e)
         {
-
-            //imageRecognizer.Recognitions.Add(new Recognition
-            //{
-            //    Count = 1,
-            //    Title = "DSD",
-            //    Photos = null,
-                
-            //});
-            
-            await imageRecognizer.Load();
-            //PictiresPanel.DataContext = null;
-            //await imageRecognizer.ClearAsync();
+            //await connection.SendAsync("Send","AAAAAAAAAA");
+            PictiresPanel.DataContext = null;
+            await imageRecognizer.ClearAsync();
         }       
 
 //===========================================================================================//

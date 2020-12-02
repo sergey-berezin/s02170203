@@ -9,6 +9,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Contracts;
 using System.Diagnostics;
+//using ImageRecognition;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Server.Controllers
 {
@@ -16,47 +18,77 @@ namespace Server.Controllers
     [Route("[controller]")]
     public class RecognitionController : ControllerBase
     {
-        [HttpGet]
-        public async Task<IEnumerable<Recognition>> LoadAsync()
+        [HttpGet("add")]
+        public List<Recognition> Add()
         {
-            return await Task.Run(() =>
+            Console.WriteLine("ADD");
+            var a = new List<Recognition>();
+
+            lock (Program.NewRecognitions)
             {
-                ObservableCollection<Recognition> b = new ObservableCollection<Recognition>();
-                using (var db = new DataBaseSetup.Context())
+                foreach (var b in Program.NewRecognitions)
                 {
-                    foreach (var r in db.Recognitions.Include(a => a.Photos).ThenInclude(a => a.Pixels))
+                    var c = new Recognition
                     {
-                        ObservableCollection<Photo> a = new ObservableCollection<Photo>();
-                        foreach (var photo in r.Photos)
+                        Count = b.Count,
+                        Title = b.Title,
+                        Photos = new ObservableCollection<Photo>()
+                    };
+                    foreach(var d in b.Photos)
+                    {
+                        c.Photos.Add(new Photo
                         {
-                            a.Add(new Photo
-                            {
-                                IsSavedInDataBase = true,
-                                Path = photo.Path,
-                                Pixels = photo.Pixels.Pixels,
-                                Image = null
-                            }); ;
-                        }
-                        b.Add(new Recognition
-                        {
-                            Title = r.Title,
-                            Count = r.Photos.Count,
-                            Photos = a
+                            Path = d.Path
                         });
                     }
+                    a.Add(c);
                 }
-                return b;
-            });
+                Program.NewRecognitions.Clear();
+            }
+            Console.WriteLine("add");
+            return a;
         }
-        
-        [HttpPut]
-        public async Task SaveAsync(IEnumerable<Recognition> recognitions)
+
+        [HttpGet("load")]
+        public List<Recognition> Load()
         {
+            return Program.Recognitions;
+        }
+
+        [HttpPost("start")]
+        public async Task<List<Recognition>> StartAsync(StartOptions rec)
+        {
+            Console.WriteLine($"START {rec.Images.Count}");
+            //foreach(var a in rec.Images)
+            //{
+            //    Console.WriteLine($"{a.Path}");
+            //}
+            ImageRecognition.ImageRecognizer.onnxModelPath = rec.Onnx;
+            Program.Photos = rec.Images;
+            await ImageRecognition.ImageRecognizer.RecognitionAsync(from i in rec.Images
+                                                   select i.Path);
+            
+            Console.WriteLine("start");
+            return Program.Recognitions;
+        }
+
+        [HttpPost("stop")]
+        public async Task Stop()
+        {
+            Console.WriteLine("STOP");
+            await ImageRecognition.ImageRecognizer.CancelRecognitionAsync();
+            Console.WriteLine("stop");
+        }
+
+        [HttpPut("save")]
+        public async Task SaveAsync()
+        {
+            Console.WriteLine("SAVE");
             await Task.Run(async () =>
             {
                 using (var db = new DataBaseSetup.Context())
                 {
-                    foreach (var r in recognitions)
+                    foreach (var r in Program.Recognitions)
                     {
                         var rec = (from b in db.Recognitions
                                    where r.Title == b.Title
@@ -97,14 +129,24 @@ namespace Server.Controllers
                     await db.SaveChangesAsync();
                 }
             });
+            Program.Photos.Clear();
+            Console.WriteLine("save");
         }
     
-        [HttpPost("start")]
-        public async Task StartAsync(StartOptions startOptions)
+        [HttpPut("clear")]
+        public async Task ClearAsync()
         {
-            Trace.WriteLine(startOptions.Onnx);
-            Console.WriteLine(startOptions.Onnx);
+            Console.WriteLine("CLEAR");
+            using (var db = new DataBaseSetup.Context())
+            {               
+                db.Recognitions.RemoveRange(db.Recognitions);
+                db.Photos.RemoveRange(db.Photos);
+                db.Blobs.RemoveRange(db.Blobs);
+                await db.SaveChangesAsync();               
+            }
+            Program.Photos.Clear();
+            Program.Recognitions.Clear();
+            Console.WriteLine("clear");
         }
-    
     }
 }

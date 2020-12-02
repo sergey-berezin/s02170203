@@ -10,13 +10,14 @@ using System.Windows.Media.Imaging;
 using Contracts;
 using System.Net.Http;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace WPF
 {
     public class ImageRecognizerVM : BaseViewModel
     {
 
-        private HttpClient httpClient;
+        private HttpClient client;
 
 //===========================================================================================//
         public ObservableCollection<Recognition> Recognitions { get; set; }
@@ -26,10 +27,11 @@ namespace WPF
 
         public ImageRecognizerVM()
         {
-            httpClient = new HttpClient();
+            client = new HttpClient();
             //ImageRecognizer.Result += Add;
 
             Recognitions = new ObservableCollection<Recognition>();
+            LoadAsync();
             Photos = new List<Photo>();
         }
 
@@ -145,7 +147,7 @@ namespace WPF
             }
         }
 
-        public bool isClearing = false;
+        private bool isClearing = false;
         public bool IsClearing
         {
             get
@@ -160,122 +162,216 @@ namespace WPF
             }
         }
 
-        //===========================================================================================// 
+        private bool isRecognizing = false;
+        private string[] images = null;
+
+//===========================================================================================// 
 
         public async Task StartAsync()
         {
             IsRunning = true;
-            Photos = await ImageGeneratorAsync(ImagesPath);
-            string[] images = await RemoveRecognizedImagesAsync();
 
-            //ImagesCount = images.Length;
-            //ImagesCounter = 0;
+            images = Directory.GetFiles(ImagesPath);
+            
+            Photos = await ImageGeneratorAsync();
+            Photos = await RemoveRecognizedImagesAsync();
+                       
+            List<Photo> sendPhotos = new List<Photo>();
+            foreach(var p in Photos)
+            {
+                sendPhotos.Add(new Photo
+                {
+                    IsSavedInDataBase = false,
+                    Path = p.Path,
+                    Pixels = p.Pixels,
+                    Image = null
+                });
+            }
 
-            var cnt = JsonConvert.SerializeObject(new StartOptions
+            ImagesCount = images.Length;
+            ImagesCounter = 0;
+
+            var b = new StartOptions
             {
                 Onnx = OnnxModelPath,
-                Images = images,
+                Images = sendPhotos,
+            };
+
+            var json = JsonConvert.SerializeObject(b);
+            var data = new StringContent(json, Encoding.UTF8, "application/json");
+            var url = "http://localhost:5000/recognition/start/";
+            isRecognizing = true;
+
+            var task = Task.Factory.StartNew(async () =>
+            {
+                while (isRecognizing)
+                {
+                    Trace.WriteLine("::::::::");
+                    using (var ans = await client.GetAsync("http://localhost:5000/recognition/add/"))
+                    {
+                        var resp = await ans.Content.ReadAsStringAsync();
+                        List<Recognition> rec = JsonConvert.DeserializeObject<List<Recognition>>(resp);
+                        Add(rec);
+                    }
+                    await Task.Run(() => System.Threading.Thread.Sleep(500));
+                }
+
             });
 
-            var msg = new StringContent(cnt);
-            msg.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-            await httpClient.PostAsync("https://localhost:44348/recognition/start", msg);
-            
-            //await ImageRecognizer.RecognitionAsync(images);
+            await client.PostAsync(url, data);
+            isRecognizing = false;
 
-            //await SaveAsync();
-            //Photos.Clear();
+            using (var ans = await client.GetAsync("http://localhost:5000/recognition/add/"))
+            {
+                var resp = await ans.Content.ReadAsStringAsync();
+                List<Recognition> rec = JsonConvert.DeserializeObject<List<Recognition>>(resp);
+                Add(rec);
+            }
+
+            IsStopping = true;
+            
+            await SaveAsync();
+            Photos.Clear();
+            
+            IsStopping = false;
             IsRunning = false;
         }
-        
-        //public async Task StopAsync()
-        //{
-        //    IsStopping = true;
 
-        //    await ImageRecognizer.CancelRecognitionAsync();
-        //    await SaveAsync();
+        public async Task StopAsync()
+        {
+            IsStopping = true;
 
-        //    Photos.Clear();
-        //    IsStopping = false;
-        //}
-        //public async Task ClearAsync()
-        //{
-        //    IsClearing = true;
-        //    Recognitions.Clear();
-        //    Photos.Clear();
-        //    using (var db = new Context())
-        //    {
-        //        db.Recognitions.RemoveRange(db.Recognitions);
-        //        db.Photos.RemoveRange(db.Photos);
-        //        db.Blobs.RemoveRange(db.Blobs);
-        //        await db.SaveChangesAsync();
-        //    }
-        //    IsClearing = false;
-        //}
+            var url = "http://localhost:5000/recognition/stop/";
+            await client.PostAsync(url, null);
+        }
 
-        //===========================================================================================//
+        public async Task ClearAsync()
+        {
+            IsClearing = true;
+            Recognitions.Clear();
+            Photos.Clear();
 
-        //private void Add(Prediction prediction)
-        //{
-        //    string path = ImagesPath + "\\" + prediction.Path;
+            var url = "http://localhost:5000/recognition/clear/";
+            await client.PutAsync(url, null);
+            
+            IsClearing = false;
+        }
 
-        //    App.Current.Dispatcher.Invoke(() =>
-        //    {
-        //        var l = (from pic in Recognitions
-        //                 where pic.Title == prediction.Label
-        //                 select pic).FirstOrDefault();
+//===========================================================================================//
 
-        //        var q = (from pic in Photos
-        //                 where path == pic.Path
-        //                 select pic).FirstOrDefault();
+        private void Add(List<Recognition> predictions)
+        {
+            if (predictions.Count == 0) return;
+            
+            foreach(var prediction in predictions)
+            {
+                Trace.WriteLine($"{prediction.Title}   {prediction.Count}");
+                var l = (from pic in Recognitions
+                         where pic.Title == prediction.Title
+                         select pic).FirstOrDefault();
+                
+                List<Photo> a = new List<Photo>();
+                
+                foreach(var photo in prediction.Photos)
+                {
+                    a.Add(new Photo
+                    {
+                        IsSavedInDataBase = true,
+                        Path = photo.Path,
+                        Pixels = (from p in Photos
+                                  where p.Path == photo.Path
+                                  select p.Pixels).SingleOrDefault(),
 
-        //        if (l == null) //first time 
-        //        {
-        //            Recognitions.Add(new Recognition
-        //            {
-        //                Title = prediction.Label,
-        //                Count = 1,
-        //                Photos = new ObservableCollection<Photo> { q }
-        //            });
-        //        }
-        //        else
-        //        {
-        //            int index = Recognitions.IndexOf(l);
-        //            Recognitions[index].Count++;
-        //            Recognitions[index].Photos.Add(q);
-        //        }
+                        Image = (from p in Photos
+                                 where p.Path == photo.Path
+                                 select p.Image).SingleOrDefault(),
+                    });
+                }                                                                                                                          
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    if (l == null) //first time 
+                    {
+                        var b = new ObservableCollection<Photo>();
+                        foreach (var ph in a)
+                        {
+                            b.Add(ph);
+                        }
+                        Recognitions.Add(new Recognition
+                        {
+                            Title = prediction.Title,
+                            Count = b.Count,
+                            Photos = b,
+                        });
+                    }
+                    else
+                    {
+                        int index = Recognitions.IndexOf(l);
+                        Recognitions[index].Count += a.Count;
+                        foreach (var ph in a)
+                        {
+                            Recognitions[index].Photos.Add(ph);
+                        }
+                    }
+                });               
+            }
+            //foreach (var r in rec)
+            //{               
+            //    List<Photo> a = new List<Photo>();
+            //    foreach (var photo in r.Photos)
+            //    {              
+            //        a.Add(new Photo
+            //        {
+            //            IsSavedInDataBase = true,
+            //            Path = photo.Path,
+            //            Pixels = (from p in Photos
+            //                      where p.Path == photo.Path
+            //                      select p.Pixels).SingleOrDefault(),
 
-        //        ImagesCounter++;                             
-        //    });
-        //}
+            //            Image = (from p in Photos
+            //                     where p.Path == photo.Path
+            //                     select p.Image).SingleOrDefault(),
+            //        });
+            //    }
+            //    App.Current.Dispatcher.Invoke(() =>
+            //    {
+            //        ObservableCollection<Photo> b = new ObservableCollection<Photo>();
+            //        foreach (var c in a)
+            //        {
+            //            b.Add(c);
+            //        }
+            //        Recognitions.Add(new Recognition
+            //        {
+            //            Count = r.Photos.Count,
+            //            Title = r.Title,
+            //            Photos = b,
+            //        });
+            //    });
+            //}
+        }
 
-        //===========================================================================================//       
+//===========================================================================================//       
 
         private async Task SaveAsync()
         {
-            var cnt = JsonConvert.SerializeObject(Recognitions);
-            var msg = new StringContent(cnt);
-            msg.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-            await httpClient.PutAsync("https://localhost:44348/recognition", msg);
+            var url = "http://localhost:5000/recognition/save/";
+
+            var response = await client.PutAsync(url, null);
         }
-        private async Task<string[]> RemoveRecognizedImagesAsync()
+        private async Task<List<Photo>> RemoveRecognizedImagesAsync()
         {
             return await Task.Run(() =>
-            {
-                string[] images = Directory.GetFiles(ImagesPath);
-
-                for (int i = 0; i < images.Length; i++)
+            {               
+                for (int i = 0; i < Photos.Count; i++)
                 {
+                    Trace.WriteLine(i);
                     var q = from rec in Recognitions
                             from ph in rec.Photos
-                            where ph.Path == images[i]
+                            where ph.Path == Photos[i].Path
                             select ph.Pixels;
 
                     if (q != null)
                     {
-                        var a = (from b in Photos
-                                 where b.Path == images[i]
-                                 select b.Pixels).FirstOrDefault();
+                        var a = Photos[i].Pixels;
 
                         foreach (byte[] pxls in q)
                         {
@@ -289,22 +385,21 @@ namespace WPF
                                     }
                                     if (j == a.Length - 1)
                                     {
-                                        images[i] = null;
+                                        Photos[i].Path = null;
                                     }
                                 }
                             }
                         }
                     }
                 }
-
-                return images = (from a in images
-                                 where a != null
-                                 select a).ToArray();
+                return (from a in Photos
+                        where a.Path != null
+                        select a).ToList();
             });
         }
-        public async Task Load()
+        public async Task LoadAsync()
         {   
-            using (var ans = await httpClient.GetAsync("https://localhost:44348/recognition"))
+            using (var ans = await client.GetAsync("http://localhost:5000/recognition/load"))
             {
                 var recognitions = JsonConvert.DeserializeObject<ObservableCollection<Recognition>>(await ans.Content.ReadAsStringAsync());
                 foreach(var r in recognitions)
@@ -371,11 +466,10 @@ namespace WPF
             }
             return data;
         }
-        private async Task<List<Photo>> ImageGeneratorAsync(string path)
+        private async Task<List<Photo>> ImageGeneratorAsync()
         {
             return await Task.Run(async () =>
             {
-                string[] images = Directory.GetFiles(path);
                 Task<Photo>[] tasks = new Task<Photo>[images.Length];
 
                 for (int i = 0; i < images.Length; i++)

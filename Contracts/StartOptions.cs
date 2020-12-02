@@ -7,6 +7,6 @@ namespace Contracts
     public class StartOptions
     {
         public string Onnx { get; set; }
-        public string[] Images {get;set;}
+        public List<Photo> Images { get; set; }
     }
 }

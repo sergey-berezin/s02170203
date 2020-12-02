@@ -41,13 +41,14 @@ namespace ImageRecognition
 
 //===========================================================================================//
 
-        public static async Task RecognitionAsync(string[] images)
-        {                   
-            tasks = new Task[images.Length];
+        public static async Task RecognitionAsync(IEnumerable<string> imags)
+        {
+            var images = imags.ToArray();
 
+            tasks = new Task[images.Length];
             try
             {
-                for (int i = 0; i < images.Length; i++)
+                for (int i = 0; i < images.Count(); i++)
                 {                                   
                     tasks[i] = Task.Factory.StartNew((imagePath) =>
                     {
@@ -99,7 +100,7 @@ namespace ImageRecognition
                                             .OrderByDescending(x => x.Confidence)
                                             .Take(1);
                         Prediction prediction = top1.First();
-                        prediction.Path = Path.GetFileName((string)imagePath);
+                        prediction.Path = (string)imagePath;
 
                         if (token.IsCancellationRequested)
                         {
