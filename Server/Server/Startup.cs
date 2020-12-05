@@ -26,7 +26,7 @@ namespace Server
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            //services.AddSignalR();
+            services.AddSignalR();
             services.AddControllers();
         }
 
@@ -47,7 +47,7 @@ namespace Server
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                //endpoints.MapHub<RecognitionResultHub>("/add");
+                endpoints.MapHub<Hubs.RecognitionHub>("/recognitionhub");
             });
         }
     }

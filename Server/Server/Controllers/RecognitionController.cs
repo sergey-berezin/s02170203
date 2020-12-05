@@ -6,6 +6,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Contracts;
+using Microsoft.AspNetCore.SignalR;
+//using ImageRecognition;
 
 namespace Server.Controllers
 {
@@ -13,59 +15,74 @@ namespace Server.Controllers
     [Route("[controller]")]
     public class RecognitionController : ControllerBase
     {
-        [HttpGet("add")]
-        public List<Recognition> Add()
-        {
-            Console.WriteLine("ADD");
-            var a = new List<Recognition>();
+        private static IHubContext<Hubs.RecognitionHub> hubContext;
 
-            lock (Program.NewRecognitions)
-            {
-                foreach (var b in Program.NewRecognitions)
-                {
-                    var c = new Recognition
-                    {
-                        Count = b.Count,
-                        Title = b.Title,
-                        Photos = new ObservableCollection<Photo>()
-                    };
-                    foreach(var d in b.Photos)
-                    {
-                        c.Photos.Add(new Photo
-                        {
-                            Path = d.Path
-                        });
-                    }
-                    a.Add(c);
-                }
-                Program.NewRecognitions.Clear();
-            }
-            Console.WriteLine("add");
-            return a;
+        public RecognitionController(IHubContext<Hubs.RecognitionHub> ahubContext)
+        {
+            hubContext = ahubContext;
         }
+
+        public static async void RealTimeAdd(ImageRecognition.Prediction s)
+        {
+            await hubContext.Clients.All.SendAsync("RealTimeAdd", s.Label, s.Path);
+        }
+
+        //[HttpGet("add")]
+        //public List<Recognition> Add()
+        //{
+        //    Console.WriteLine("ADD");
+        //    var a = new List<Recognition>();
+
+        //    lock (Program.NewRecognitions)
+        //    {
+        //        foreach (var b in Program.NewRecognitions)
+        //        {
+        //            var c = new Recognition
+        //            {
+        //                Count = b.Count,
+        //                Title = b.Title,
+        //                Photos = new ObservableCollection<Photo>()
+        //            };
+        //            foreach(var d in b.Photos)
+        //            {
+        //                c.Photos.Add(new Photo
+        //                {
+        //                    Path = d.Path
+        //                });
+        //            }
+        //            a.Add(c);
+        //        }
+        //        Program.NewRecognitions.Clear();
+        //    }
+        //    Console.WriteLine("add");
+        //    return a;
+        //}
 
         [HttpGet("load")]
         public List<Recognition> Load()
         {
-            return Program.Recognitions;
+            Console.WriteLine("LOAD");
+            Console.WriteLine("load");
+            return Program.Recognitions;           
         }
 
         [HttpPost("start")]
-        public async Task<List<Recognition>> StartAsync(StartOptions rec)
+        public async Task StartAsync(StartOptions rec)
         {
             Console.WriteLine($"START {rec.Images.Count}");
 
+            foreach (var a in rec.Images) Console.WriteLine(a.Path);
+            Console.WriteLine("=================");
             ImageRecognition.ImageRecognizer.onnxModelPath = rec.Onnx;
             Program.Photos = rec.Images;
             await ImageRecognition.ImageRecognizer.RecognitionAsync(from i in rec.Images
                                                    select i.Path);
             
             Console.WriteLine("start");
-            return Program.Recognitions;
         }
 
         [HttpPost("stop")]
-        public async Task Stop()
+        public async Task StopAsync()
         {
             Console.WriteLine("STOP");
             await ImageRecognition.ImageRecognizer.CancelRecognitionAsync();

@@ -17,7 +17,7 @@ namespace Server
     {
         public static List<Recognition> Recognitions { get; set; } = new List<Recognition>();
         public static List<Photo> Photos { get; set; } = new List<Photo>();
-        public static List<Recognition> NewRecognitions { get; set; } = new List<Recognition>();
+        //public static List<Recognition> NewRecognitions { get; set; } = new List<Recognition>();
         public static async Task Main(string[] args)
         {
             ImageRecognition.ImageRecognizer.Result += Add;
@@ -27,62 +27,63 @@ namespace Server
         }
 
         private static void Add(ImageRecognition.Prediction prediction)
-        {       
-            //Console.WriteLine(prediction.Path);
-            lock (Recognitions)
-            { 
-                var l = (from pic in Recognitions
-                         where pic.Title == prediction.Label
-                         select pic).FirstOrDefault();
-
-                var q = (from pic in Photos
-                         where prediction.Path == pic.Path
-                         select pic).FirstOrDefault();
-
-                if (l == null) //first time 
-                {
-                    Recognitions.Add(new Recognition
-                    {
-                        Title = prediction.Label,
-                        Count = 1,
-                        Photos = new ObservableCollection<Photo> { q }
-                    });
-                }
-                else
-                {
-                    int index = Recognitions.IndexOf(l);
-                    Recognitions[index].Count++;
-                    Recognitions[index].Photos.Add(q);
-                }           
-            }
-            lock (NewRecognitions)
-            {
-                var l = (from pic in NewRecognitions
-                         where pic.Title == prediction.Label
-                         select pic).FirstOrDefault();
-
-                var q = (from pic in Photos
-                         where prediction.Path == pic.Path
-                         select pic).FirstOrDefault();
-
-                if (l == null) //first time 
-                {
-                    NewRecognitions.Add(new Recognition
-                    {
-                        Title = prediction.Label,
-                        Count = 1,
-                        Photos = new ObservableCollection<Photo> { q }
-                    });
-                }
-                else
-                {
-                    int index = NewRecognitions.IndexOf(l);
-                    NewRecognitions[index].Count++;
-                    NewRecognitions[index].Photos.Add(q);
-                }
-            }
+        {
+            Server.Controllers.RecognitionController.RealTimeAdd(prediction);
         }
-        
+        //    lock (Recognitions)
+        //    { 
+        //        var l = (from pic in Recognitions
+        //                 where pic.Title == prediction.Label
+        //                 select pic).FirstOrDefault();
+
+        //        var q = (from pic in Photos
+        //                 where prediction.Path == pic.Path
+        //                 select pic).FirstOrDefault();
+
+        //        if (l == null) //first time 
+        //        {
+        //            Recognitions.Add(new Recognition
+        //            {
+        //                Title = prediction.Label,
+        //                Count = 1,
+        //                Photos = new ObservableCollection<Photo> { q }
+        //            });
+        //        }
+        //        else
+        //        {
+        //            int index = Recognitions.IndexOf(l);
+        //            Recognitions[index].Count++;
+        //            Recognitions[index].Photos.Add(q);
+        //        }           
+        //    }
+        //    lock (NewRecognitions)
+        //    {
+        //        var l = (from pic in NewRecognitions
+        //                 where pic.Title == prediction.Label
+        //                 select pic).FirstOrDefault();
+
+        //        var q = (from pic in Photos
+        //                 where prediction.Path == pic.Path
+        //                 select pic).FirstOrDefault();
+
+        //        if (l == null) //first time 
+        //        {
+        //            NewRecognitions.Add(new Recognition
+        //            {
+        //                Title = prediction.Label,
+        //                Count = 1,
+        //                Photos = new ObservableCollection<Photo> { q }
+        //            });
+        //        }
+        //        else
+        //        {
+        //            int index = NewRecognitions.IndexOf(l);
+        //            NewRecognitions[index].Count++;
+        //            NewRecognitions[index].Photos.Add(q);
+        //        }
+        //    }
+        //}
+
         public static async Task<List<Recognition>> LoadAsync()
         {
             Console.WriteLine("LOAD");

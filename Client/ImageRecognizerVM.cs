@@ -185,21 +185,22 @@ namespace WPF
             var data = await PrepareDataForSendingAsync();
             var url = "http://localhost:5000/recognition/start/";
             
-            var isRecognizing = true;
+            //var isRecognizing = true;
 
-            var periodicGetToServer = Task.Factory.StartNew(async () =>
-            {
-                while (isRecognizing)
-                {
-                    AddNewRecognitionsToView(await GetNewRecognitionsFromServerAsync());
-                    await Task.Run(() => System.Threading.Thread.Sleep(500));
-                }
-            });
+            //var periodicGetToServer = Task.Factory.StartNew(async () =>
+            //{
+            //    while (isRecognizing)
+            //    {
+            //        AddNewRecognitionsToView(await GetNewRecognitionsFromServerAsync());
+            //        await Task.Run(() => System.Threading.Thread.Sleep(500));
+            //    }
+            //});
 
             await client.PostAsync(url, data);
-            isRecognizing = false;
+            
+            //isRecognizing = false;
 
-            AddNewRecognitionsToView(await GetNewRecognitionsFromServerAsync());
+            //AddNewRecognitionsToView(await GetNewRecognitionsFromServerAsync());
 
             IsStopping = true;
             

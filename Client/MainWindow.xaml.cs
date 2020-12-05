@@ -7,6 +7,10 @@ using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.IO;
 using Contracts;
+using Microsoft.AspNetCore.SignalR.Client;
+using System.Diagnostics;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace WPF
 {
@@ -14,15 +18,47 @@ namespace WPF
     {
 
         private ImageRecognizerVM imageRecognizer;
-        //private HubConnection connection; 
+        private HubConnection connection; 
         
         public MainWindow()
         {
-            //connection = new HubConnectionBuilder()
-            //    .WithUrl("http://localhost:5000/add")
-            //    .Build();
-            //connection.On<string>("Add", msg => Trace.WriteLine($"AAAAAAAAA{msg}"));
-            //connection.StartAsync();
+            connection = new HubConnectionBuilder()
+                .WithUrl("http://localhost:5000/recognitionhub")
+                .Build();
+            connection.On<string, string>("RealTimeAdd", (title, path) =>
+            {
+                Trace.WriteLine($"{title} AAA {path}");
+                lock (imageRecognizer.Recognitions)
+                {
+                    var l = (from pic in imageRecognizer.Recognitions
+                             where pic.Title == title
+                             select pic).FirstOrDefault();
+
+                    var q = (from pic in imageRecognizer.Photos
+                             where path == pic.Path
+                             select pic).FirstOrDefault();
+                    App.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (l == null) //first time 
+                        {
+                            imageRecognizer.Recognitions.Add(new Recognition
+                            {
+                                Title = title,
+                                Count = 1,
+                                Photos = new ObservableCollection<Photo> { q }
+                            });
+                        }
+                        else
+                        {
+                            int index = imageRecognizer.Recognitions.IndexOf(l);
+                            imageRecognizer.Recognitions[index].Count++;
+                            imageRecognizer.Recognitions[index].Photos.Add(q);
+                        }
+                        imageRecognizer.ImagesCounter++;
+                    });                    
+                }
+            });
+            connection.StartAsync();
 
             imageRecognizer = new ImageRecognizerVM();
             InitializeComponent();                   
