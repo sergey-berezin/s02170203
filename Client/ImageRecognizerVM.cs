@@ -10,13 +10,15 @@ using Contracts;
 using System.Net.Http;
 using Newtonsoft.Json;
 using System.Text;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace WPF
 {
     public class ImageRecognizerVM : BaseViewModel
     {
-      
+
 //===========================================================================================//
+        
         public ObservableCollection<Recognition> Recognitions { get; set; }
         public List<Photo> Photos { get; set; }
 
@@ -148,25 +150,40 @@ namespace WPF
         }
 
 //===========================================================================================// 
-        
+
         private string[] images = null;
         private HttpClient client = null;
+        private HubConnection connection = null;
 
 //===========================================================================================// 
-        
+
         public ImageRecognizerVM()
         {
             client = new HttpClient();
             Recognitions = new ObservableCollection<Recognition>();
+
+            connection = new HubConnectionBuilder()
+                .WithUrl("http://localhost:5000/recognitionhub")
+                .Build();
+            connection.On<string, string>("RealTimeAdd", Add);
+            connection.StartAsync();
+            
+
             LoadRecognitionsFromServerAsync();
             Photos = new List<Photo>();
         }
 
 //===========================================================================================//
-        
+
         public async Task StartAsync()
         {
             IsRunning = true;
+            
+            if (connection.State == HubConnectionState.Disconnected)
+            {
+                await TryReconnectToserver();
+                await LoadAsync();
+            }         
 
             images = Directory.GetFiles(ImagesPath);
             
@@ -179,7 +196,7 @@ namespace WPF
                 return;
             }
 
-            ImagesCount = images.Length;
+            ImagesCount = Photos.Count;
             ImagesCounter = 0;
 
             var data = await PrepareDataForSendingAsync();
@@ -324,9 +341,41 @@ namespace WPF
                 });               
             }
         }
+        private void Add(string title, string path)
+        {
+            lock (Recognitions)
+            {
+                var l = (from pic in Recognitions
+                         where pic.Title == title
+                         select pic).FirstOrDefault();
+
+                var q = (from pic in Photos
+                         where path == pic.Path
+                         select pic).FirstOrDefault();
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    if (l == null) //first time 
+                    {
+                        Recognitions.Add(new Recognition
+                        {
+                            Title = title,
+                            Count = 1,
+                            Photos = new ObservableCollection<Photo> { q }
+                        });
+                    }
+                    else
+                    {
+                        int index = Recognitions.IndexOf(l);
+                        Recognitions[index].Count++;
+                        Recognitions[index].Photos.Add(q);
+                    }
+                    ImagesCounter++;
+                });
+            }
+        }
 
 //===========================================================================================//       
-
+        
         private async Task SaveRecognitionsOnServerAsync()
         {
             var url = "http://localhost:5000/recognition/save/";
@@ -334,6 +383,7 @@ namespace WPF
         }       
         private async Task LoadRecognitionsFromServerAsync()
         {
+            if (Recognitions.Count != 0) return;
             using var ans = await client.GetAsync("http://localhost:5000/recognition/load");
             var recognitions = JsonConvert.DeserializeObject<ObservableCollection<Recognition>>(await ans.Content.ReadAsStringAsync());
             foreach (var r in recognitions)
@@ -356,6 +406,16 @@ namespace WPF
                     Photos = a,
                 });
             }
+        }
+        private async Task TryReconnectToserver()
+        {
+            await connection.StartAsync();
+            while (connection.State == HubConnectionState.Connecting || connection.State == HubConnectionState.Reconnecting)
+            {
+                using var t = Task.Run(() => System.Threading.Thread.Sleep(500));
+                await t;
+            }
+            if (connection.State == HubConnectionState.Disconnected) throw new Exception("Не удалось подключиться к серверу");
         }
 
 //===========================================================================================//

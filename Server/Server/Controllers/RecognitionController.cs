@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Contracts;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 //using ImageRecognition;
 
 namespace Server.Controllers
@@ -27,43 +28,70 @@ namespace Server.Controllers
             await hubContext.Clients.All.SendAsync("RealTimeAdd", s.Label, s.Path);
         }
 
-        //[HttpGet("add")]
-        //public List<Recognition> Add()
-        //{
-        //    Console.WriteLine("ADD");
-        //    var a = new List<Recognition>();
+        [HttpGet("add")]
+        public List<Recognition> Add()
+        {
+            Console.WriteLine("ADD");
+            var a = new List<Recognition>();
 
-        //    lock (Program.NewRecognitions)
-        //    {
-        //        foreach (var b in Program.NewRecognitions)
-        //        {
-        //            var c = new Recognition
-        //            {
-        //                Count = b.Count,
-        //                Title = b.Title,
-        //                Photos = new ObservableCollection<Photo>()
-        //            };
-        //            foreach(var d in b.Photos)
-        //            {
-        //                c.Photos.Add(new Photo
-        //                {
-        //                    Path = d.Path
-        //                });
-        //            }
-        //            a.Add(c);
-        //        }
-        //        Program.NewRecognitions.Clear();
-        //    }
-        //    Console.WriteLine("add");
-        //    return a;
-        //}
+            lock (Program.Recognitions)
+            {
+                foreach (var b in Program.Recognitions)
+                {
+                    var c = new Recognition
+                    {
+                        Count = b.Count,
+                        Title = b.Title,
+                        Photos = new ObservableCollection<Photo>()
+                    };
+                    foreach (var d in b.Photos)
+                    {
+                        c.Photos.Add(new Photo
+                        {
+                            Path = d.Path
+                        });
+                    }
+                    a.Add(c);
+                }
+                Program.Recognitions.Clear();
+            }
+            Console.WriteLine("add");
+            return a;
+        }
 
         [HttpGet("load")]
-        public List<Recognition> Load()
+        public async Task<List<Recognition>> Load()
         {
             Console.WriteLine("LOAD");
-            Console.WriteLine("load");
-            return Program.Recognitions;           
+            return await Task.Run(() =>
+            {
+                List<Recognition> b = new List<Recognition>();
+                using (var db = new DataBaseSetup.Context())
+                {
+                    foreach (var r in db.Recognitions.Include(a => a.Photos).ThenInclude(a => a.Pixels))
+                    {
+                        ObservableCollection<Photo> a = new ObservableCollection<Photo>();
+                        foreach (var photo in r.Photos)
+                        {
+                            a.Add(new Photo
+                            {
+                                IsSavedInDataBase = true,
+                                Path = photo.Path,
+                                Pixels = photo.Pixels.Pixels,
+                                Image = null
+                            });
+                        }
+                        b.Add(new Recognition
+                        {
+                            Title = r.Title,
+                            Count = r.Photos.Count,
+                            Photos = a
+                        });
+                    }
+                }
+                Console.WriteLine("load");
+                return b;
+            });
         }
 
         [HttpPost("start")]
@@ -138,6 +166,7 @@ namespace Server.Controllers
                     await db.SaveChangesAsync();
                 }
             });
+            Program.Recognitions.Clear();
             Program.Photos.Clear();
             Console.WriteLine("save");
         }
