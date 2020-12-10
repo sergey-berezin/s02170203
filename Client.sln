@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPF", "Client\WPF.csproj", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Contracts", "Contracts\Contracts.csproj", "{6407CA65-BE46-472D-86C9-A9DF80B259A9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerConnection", "Client\ServerConnection\ServerConnection.csproj", "{5CBB49C6-7EF6-42A3-9D17-AD68414BD623}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Library", "Client\Library\Library.csproj", "{63C8FBB8-C95F-4789-8B59-03872DA7A52E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{6407CA65-BE46-472D-86C9-A9DF80B259A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6407CA65-BE46-472D-86C9-A9DF80B259A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6407CA65-BE46-472D-86C9-A9DF80B259A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CBB49C6-7EF6-42A3-9D17-AD68414BD623}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CBB49C6-7EF6-42A3-9D17-AD68414BD623}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CBB49C6-7EF6-42A3-9D17-AD68414BD623}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CBB49C6-7EF6-42A3-9D17-AD68414BD623}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63C8FBB8-C95F-4789-8B59-03872DA7A52E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63C8FBB8-C95F-4789-8B59-03872DA7A52E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63C8FBB8-C95F-4789-8B59-03872DA7A52E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63C8FBB8-C95F-4789-8B59-03872DA7A52E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

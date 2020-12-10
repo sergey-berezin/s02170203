@@ -127,6 +127,7 @@ namespace ImageRecognition
         {
             try
             {
+                if (tasks == null) return;
                 cts.Cancel();
                 await Task.WhenAll(tasks);                
             }
@@ -134,13 +135,20 @@ namespace ImageRecognition
             {
                 Trace.WriteLine($"{nameof(OperationCanceledException)} thrown with message: {e.Message}");
             }
+            catch (Exception e)
+            {
+                Trace.WriteLine($"{nameof(OperationCanceledException)} thrown with message: {e.Message}");
+            }
             finally
             {
-                foreach (Task t in tasks)
+                if(tasks != null)
                 {
-                    t.Dispose();
+                    foreach (Task t in tasks)
+                    {
+                        t?.Dispose();
+                    }
                 }
-                cts.Dispose();
+                cts?.Dispose();
                 cts = new CancellationTokenSource();
                 token = cts.Token;
             }

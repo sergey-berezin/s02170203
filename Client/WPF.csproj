@@ -7,6 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Library\**" />
+    <Compile Remove="ServerConnection\**" />
+    <EmbeddedResource Remove="Library\**" />
+    <EmbeddedResource Remove="ServerConnection\**" />
+    <None Remove="Library\**" />
+    <None Remove="ServerConnection\**" />
+    <Page Remove="Library\**" />
+    <Page Remove="ServerConnection\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove=".gitattributes" />
     <None Remove=".gitignore" />
     <None Remove="README.md" />
@@ -23,6 +34,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Contracts\Contracts.csproj" />
+    <ProjectReference Include="Library\Library.csproj" />
+    <ProjectReference Include="ServerConnection\ServerConnection.csproj" />
   </ItemGroup>
 
   <ItemGroup>

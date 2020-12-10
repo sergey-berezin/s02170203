@@ -17,13 +17,12 @@ namespace Server
     {
         public static List<Recognition> Recognitions { get; set; } = new List<Recognition>();
         public static List<Photo> Photos { get; set; } = new List<Photo>();
-
+        public static bool flag = false;
         public static async Task Main(string[] args)
         {
             ImageRecognition.ImageRecognizer.Result += Add;
-            //Recognitions = await LoadAsync();
 
-            CreateHostBuilder(args).Build().Run();            
+            CreateHostBuilder(args).Build().Run();
         }
 
         private static void Add(ImageRecognition.Prediction prediction)

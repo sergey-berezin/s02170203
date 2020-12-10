@@ -11,6 +11,8 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using System.Text;
 using Microsoft.AspNetCore.SignalR.Client;
+using Library;
+using ServerConnection;
 
 namespace WPF
 {
@@ -35,14 +37,21 @@ namespace WPF
         {
             get
             {
-                return !IsStopping;
+                return !IsStopping && IsConnected;
             }
         }
         public bool ClearButtonEnabled
         {
             get
             {
-                return !IsClearing;
+                return !IsClearing && IsConnected &&!IsRunning;
+            }
+        }
+        public bool LoadButtonEnabled
+        {
+            get
+            {
+                return !IsLoading && IsConnected && !IsRunning;
             }
         }
 
@@ -116,6 +125,8 @@ namespace WPF
                 isRunning = value;
                 OnPropertyChanged(nameof(IsRunning));
                 OnPropertyChanged(nameof(ControlButtonContent));
+                OnPropertyChanged(nameof(ClearButtonEnabled));
+                OnPropertyChanged(nameof(LoadButtonEnabled));
             }
         }
 
@@ -148,28 +159,80 @@ namespace WPF
                 OnPropertyChanged(nameof(ClearButtonEnabled));
             }
         }
+       
+        private bool isLoading = false;
+        public bool IsLoading
+        {
+            get
+            {
+                return isLoading;
+            }
+            set
+            {
+                isLoading = value;
+                OnPropertyChanged(nameof(IsLoading));
+                OnPropertyChanged(nameof(LoadButtonEnabled));
+            }
+        }
+
+        private string colorCircleServerStatus = "red";
+        public string ColorCircleServerStatus
+        {
+            get
+            {
+                return colorCircleServerStatus;
+            }
+            set
+            {
+                colorCircleServerStatus = value;
+                OnPropertyChanged(nameof(ColorCircleServerStatus));
+            }
+        }
+
+        private bool isConnected = false;
+        public bool IsConnected
+        {
+            get
+            {
+                return isConnected;
+            }
+            set
+            {
+                isConnected = value;
+                OnPropertyChanged(nameof(IsConnected));
+                OnPropertyChanged(nameof(ClearButtonEnabled));
+                OnPropertyChanged(nameof(ControlButtonEnabled));
+                OnPropertyChanged(nameof(LoadButtonEnabled));
+            }
+        }
 
 //===========================================================================================// 
 
         private string[] images = null;
-        private HttpClient client = null;
-        private HubConnection connection = null;
+        private IServer server = null;
 
 //===========================================================================================// 
 
         public ImageRecognizerVM()
-        {
-            client = new HttpClient();
+        {          
+            server = new Server();
+            server.Result += RealTimeAddPrediction;
+            server.Connected += () =>
+            {
+                App.Current.Dispatcher.Invoke(async () =>
+                {
+                    await LoadAsync();
+                    IsConnected = true;
+                    ColorCircleServerStatus = "green";
+                });
+            };
+            server.Disconnected += () =>
+            {
+                IsConnected = false;
+                ColorCircleServerStatus = "red";
+            };
+
             Recognitions = new ObservableCollection<Recognition>();
-
-            connection = new HubConnectionBuilder()
-                .WithUrl("http://localhost:5000/recognitionhub")
-                .Build();
-            connection.On<string, string>("RealTimeAdd", Add);
-            connection.StartAsync();
-            
-
-            LoadRecognitionsFromServerAsync();
             Photos = new List<Photo>();
         }
 
@@ -177,13 +240,7 @@ namespace WPF
 
         public async Task StartAsync()
         {
-            IsRunning = true;
-            
-            if (connection.State == HubConnectionState.Disconnected)
-            {
-                await TryReconnectToserver();
-                await LoadAsync();
-            }         
+            IsRunning = true;                  
 
             images = Directory.GetFiles(ImagesPath);
             
@@ -199,29 +256,11 @@ namespace WPF
             ImagesCount = Photos.Count;
             ImagesCounter = 0;
 
-            var data = await PrepareDataForSendingAsync();
-            var url = "http://localhost:5000/recognition/start/";
-            
-            //var isRecognizing = true;
-
-            //var periodicGetToServer = Task.Factory.StartNew(async () =>
-            //{
-            //    while (isRecognizing)
-            //    {
-            //        AddNewRecognitionsToView(await GetNewRecognitionsFromServerAsync());
-            //        await Task.Run(() => System.Threading.Thread.Sleep(500));
-            //    }
-            //});
-
-            await client.PostAsync(url, data);
-            
-            //isRecognizing = false;
-
-            //AddNewRecognitionsToView(await GetNewRecognitionsFromServerAsync());
+            await server.StartAsync(await PrepareDataForSendingAsync(onnxModelPath, Photos));
 
             IsStopping = true;
-            
-            await SaveRecognitionsOnServerAsync();
+
+            await server.SaveAsync();
             Photos.Clear();
             
             IsStopping = false;
@@ -230,34 +269,38 @@ namespace WPF
         public async Task StopAsync()
         {
             IsStopping = true;
-
-            var url = "http://localhost:5000/recognition/stop/";
-            await client.PostAsync(url, null);
+            await server.StopAsync();
         }
         public async Task ClearAsync()
         {
             IsClearing = true;
+
+            await server.ClearAsync();
             Recognitions.Clear();
             Photos.Clear();
-
-            var url = "http://localhost:5000/recognition/clear/";
-            await client.PutAsync(url, null);
+            ImagesCounter = 0;
             
             IsClearing = false;
         }
         public async Task LoadAsync()
         {
-            await LoadRecognitionsFromServerAsync();
+            IsLoading = true;
+            if(Recognitions.Count == 0)
+            {
+                Recognitions.Clear();
+                AddRecognitionsToView(await server.LoadAsync());
+            }
+            IsLoading = false;
         }
 
 //===========================================================================================//
-        
-        private async Task<StringContent> PrepareDataForSendingAsync()
+
+        private async Task<StringContent> PrepareDataForSendingAsync(string onnx, IEnumerable<Photo> photos)
         {
             return await Task.Run(() =>
             {
                 List<Photo> sendPhotos = new List<Photo>();
-                foreach (var p in Photos)
+                foreach (var p in photos)
                 {
                     sendPhotos.Add(new Photo
                     {
@@ -270,122 +313,19 @@ namespace WPF
 
                 var b = new StartOptions
                 {
-                    Onnx = OnnxModelPath,
+                    Onnx = onnx,
                     Images = sendPhotos,
                 };
 
                 var json = JsonConvert.SerializeObject(b);
                 return new StringContent(json, Encoding.UTF8, "application/json");
-            });                         
-        }
-        private async Task<List<Recognition>> GetNewRecognitionsFromServerAsync()
-        {
-            using var ans = await client.GetAsync("http://localhost:5000/recognition/add/");
-            var resp = await ans.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<Recognition>>(resp);
-        }
-        private void AddNewRecognitionsToView(List<Recognition> predictions)
-        {           
-
-            if (predictions.Count == 0) return;
-            
-            foreach(var prediction in predictions)
-            {
-                var l = (from pic in Recognitions
-                         where pic.Title == prediction.Title
-                         select pic).FirstOrDefault();
-                
-                List<Photo> a = new List<Photo>();
-                
-                foreach(var photo in prediction.Photos)
-                {
-                    a.Add(new Photo
-                    {
-                        IsSavedInDataBase = true,
-                        Path = photo.Path,
-                        Pixels = (from p in Photos
-                                  where p.Path == photo.Path
-                                  select p.Pixels).SingleOrDefault(),
-
-                        Image = (from p in Photos
-                                 where p.Path == photo.Path
-                                 select p.Image).SingleOrDefault(),
-                    });
-                }                                                                                                                          
-                App.Current.Dispatcher.Invoke(() =>
-                {
-                    if (l == null) //first time 
-                    {
-                        var b = new ObservableCollection<Photo>();
-                        foreach (var ph in a)
-                        {
-                            b.Add(ph);
-                        }
-                        Recognitions.Add(new Recognition
-                        {
-                            Title = prediction.Title,
-                            Count = b.Count,
-                            Photos = b,
-                        });
-                    }
-                    else
-                    {
-                        int index = Recognitions.IndexOf(l);
-                        Recognitions[index].Count += a.Count;
-                        foreach (var ph in a)
-                        {
-                            Recognitions[index].Photos.Add(ph);
-                        }
-                    }
-                    ImagesCounter += a.Count;
-                });               
-            }
-        }
-        private void Add(string title, string path)
-        {
-            lock (Recognitions)
-            {
-                var l = (from pic in Recognitions
-                         where pic.Title == title
-                         select pic).FirstOrDefault();
-
-                var q = (from pic in Photos
-                         where path == pic.Path
-                         select pic).FirstOrDefault();
-                App.Current.Dispatcher.Invoke(() =>
-                {
-                    if (l == null) //first time 
-                    {
-                        Recognitions.Add(new Recognition
-                        {
-                            Title = title,
-                            Count = 1,
-                            Photos = new ObservableCollection<Photo> { q }
-                        });
-                    }
-                    else
-                    {
-                        int index = Recognitions.IndexOf(l);
-                        Recognitions[index].Count++;
-                        Recognitions[index].Photos.Add(q);
-                    }
-                    ImagesCounter++;
-                });
-            }
+            });
         }
 
 //===========================================================================================//       
-        
-        private async Task SaveRecognitionsOnServerAsync()
+
+        private void AddRecognitionsToView(List<Recognition> recognitions)
         {
-            var url = "http://localhost:5000/recognition/save/";
-            await client.PutAsync(url, null);
-        }       
-        private async Task LoadRecognitionsFromServerAsync()
-        {
-            if (Recognitions.Count != 0) return;
-            using var ans = await client.GetAsync("http://localhost:5000/recognition/load");
-            var recognitions = JsonConvert.DeserializeObject<ObservableCollection<Recognition>>(await ans.Content.ReadAsStringAsync());
             foreach (var r in recognitions)
             {
                 ObservableCollection<Photo> a = new ObservableCollection<Photo>();
@@ -407,15 +347,37 @@ namespace WPF
                 });
             }
         }
-        private async Task TryReconnectToserver()
+        private void RealTimeAddPrediction(Prediction prediction)
         {
-            await connection.StartAsync();
-            while (connection.State == HubConnectionState.Connecting || connection.State == HubConnectionState.Reconnecting)
+            lock (Recognitions)
             {
-                using var t = Task.Run(() => System.Threading.Thread.Sleep(500));
-                await t;
+                var l = (from pic in Recognitions
+                         where pic.Title == prediction.Title
+                         select pic).FirstOrDefault();
+
+                var q = (from pic in Photos
+                         where pic.Path == prediction.Path
+                         select pic).FirstOrDefault();
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    if (l == null) //first time 
+                    {
+                        Recognitions.Add(new Recognition
+                        {
+                            Title = prediction.Title,
+                            Count = 1,
+                            Photos = new ObservableCollection<Photo> { q }
+                        });
+                    }
+                    else
+                    {
+                        int index = Recognitions.IndexOf(l);
+                        Recognitions[index].Count++;
+                        Recognitions[index].Photos.Add(q);
+                    }
+                    ImagesCounter++;
+                });
             }
-            if (connection.State == HubConnectionState.Disconnected) throw new Exception("Не удалось подключиться к серверу");
         }
 
 //===========================================================================================//

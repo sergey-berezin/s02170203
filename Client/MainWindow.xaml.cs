@@ -36,7 +36,6 @@ namespace WPF
             }
             catch { }
         }
-
         private void OpenOnnxModel(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -73,8 +72,10 @@ namespace WPF
                 }
                 finally
                 {
+                    imageRecognizer.IsLoading = false;
                     imageRecognizer.IsRunning = false;
                     imageRecognizer.IsStopping = false;
+                    imageRecognizer.IsClearing = false;
                 }
 
             }
@@ -90,8 +91,8 @@ namespace WPF
                 }
                 finally
                 {
-                    imageRecognizer.IsRunning = false;
-                    imageRecognizer.IsStopping = false;
+                    //imageRecognizer.IsRunning = false;
+                    //imageRecognizer.IsStopping = false;
                 }
             }
         }
@@ -108,9 +109,10 @@ namespace WPF
             }
             finally
             {
-                imageRecognizer.IsClearing = false;
+                imageRecognizer.IsLoading = false;
                 imageRecognizer.IsRunning = false;
                 imageRecognizer.IsStopping = false;
+                imageRecognizer.IsClearing = false;
             }
         }
         private async void LoadImages(object sender, ExecutedRoutedEventArgs e)
@@ -125,8 +127,10 @@ namespace WPF
             }
             finally
             {
+                imageRecognizer.IsLoading = false;
                 imageRecognizer.IsRunning = false;
                 imageRecognizer.IsStopping = false;
+                imageRecognizer.IsClearing = false;
             }
         }
 
@@ -139,8 +143,6 @@ namespace WPF
                 PictiresPanel.DataContext = (Recognition)Labels.SelectedItem;
             }
         }
-
-
 
 //===========================================================================================//
     }

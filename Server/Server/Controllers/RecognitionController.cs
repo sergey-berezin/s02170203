@@ -103,9 +103,15 @@ namespace Server.Controllers
             Console.WriteLine("=================");
             ImageRecognition.ImageRecognizer.onnxModelPath = rec.Onnx;
             Program.Photos = rec.Images;
+            if (Program.flag)
+            {
+                Program.flag = false;
+                Console.WriteLine("start");
+                return;
+            }
             await ImageRecognition.ImageRecognizer.RecognitionAsync(from i in rec.Images
                                                    select i.Path);
-            
+            Program.flag = false;
             Console.WriteLine("start");
         }
 
@@ -113,6 +119,7 @@ namespace Server.Controllers
         public async Task StopAsync()
         {
             Console.WriteLine("STOP");
+            Program.flag = true;
             await ImageRecognition.ImageRecognizer.CancelRecognitionAsync();
             Console.WriteLine("stop");
         }

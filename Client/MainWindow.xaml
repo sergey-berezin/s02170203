@@ -53,6 +53,10 @@
             <ColumnDefinition Width="30"></ColumnDefinition>
         </Grid.ColumnDefinitions>
 
+        <Ellipse Fill="{Binding Path=ColorCircleServerStatus}" Width="25" Height="25" 
+                 Grid.Column="6" VerticalAlignment="Top"
+                 Grid.Row="1"/>
+        
         <TextBox x:Name="imagesPath" Text="{Binding Path=ImagesPath}"
                  FontSize="16"
                  Grid.Column="1" Grid.Row="1"
@@ -80,7 +84,8 @@
                 HorizontalAlignment="Right"
                 Height="35" Width="35">
         </Button>
-        <Button x:Name="loadButton" IsEnabled="{Binding Path=ClearButtonEnabled}"
+        
+        <Button x:Name="loadButton" IsEnabled="{Binding Path=LoadButtonEnabled}"
                 Content="Load" Command="{StaticResource LoadImagesCommand}" 
                 Height="25" Width="80" Grid.Column="1" Grid.Row="3" HorizontalAlignment="Left"/>
         
