@@ -5,6 +5,7 @@ namespace Contracts
 {
     public class Recognition : BaseViewModel
     {
+        public int Id { get; set; }
         private string title;
         public string Title
         {

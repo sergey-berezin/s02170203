@@ -7,7 +7,8 @@ namespace Contracts
     {
         public bool IsSavedInDataBase { get; set; } = false;
         public string Path { get; set; }
-        public byte[] Pixels { get; set; } = null;
+        public string PixelsString { get; set; } = null;
+        public byte[] Pixels{ get; set; } = null;
         public Object Image { get; set; }
     }
 }

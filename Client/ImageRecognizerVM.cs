@@ -334,9 +334,9 @@ namespace WPF
                     a.Add(new Photo
                     {
                         IsSavedInDataBase = true,
-                        Path = photo.Path,
-                        Pixels = photo.Pixels,
-                        Image = ByteToImage(photo.Pixels)
+                        Path = photo.Path,                       
+                        Pixels = null,
+                        Image = ByteToImage(Convert.FromBase64String(photo.PixelsString))
                     });
                 }
                 Recognitions.Add(new Recognition

@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>task #5</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+    <style type="text/css">
+        ol{
+            padding: 0
+        }
+        li {
+            list-style-type: none
+        }
+        input{
+            margin: 0 10px
+        }
+    </style>
+</head>
+<body>
+    <ol id="ol">
+    </ol>
+    <div id="imgs">
+    </div>
+
+    <!--<h2>Список пользователей</h2>
+    <form name="userForm">-->
+    <!--<input type="hidden" name="id" value="0" />
+    <div class="form-group col-md-5">
+        <label for="name">Имя:</label>
+        <input class="form-control" name="name" />
+    </div>
+    <div class="form-group col-md-5">
+        <label for="age">Возраст:</label>
+        <input class="form-control" name="age" type="number" />
+    </div>-->
+    <!--<div class="panel-body">-->
+    <!--<button type="submit" id="submit" class="btn btn-primary">Сохранить</button>-->
+    <!--<a--> <!--id="reset" class="btn btn-primary">Сбросить-->
+    <!--</a>
+        </div>
+    </form>-->
+    <!--<table class="table table-condensed table-striped  col-md-6">
+        <thead><tr><th>Id</th><th>Имя</th><th>возраст</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <div>2019 © Metanit.com</div>-->
+    <script>
+        // Получение всех пользователей
+        //async function GetUsers() {
+        //    // отправляет запрос и получаем ответ
+        //    const response = await fetch("/recognition", {
+        //        method: "GET",
+        //        headers: { "Accept": "application/json" }
+        //    });
+        //    // если запрос прошел нормально
+        //    if (response.ok === true) {
+        //        // получаем данные
+        //        const users = await response.json();
+        //        let rows = document.querySelector("tbody");
+        //        users.forEach(user => {
+        //            // добавляем полученные элементы в таблицу
+        //            rows.append(row(user));
+        //        });
+        //    }
+        //}
+
+        async function GetRecognitions() {
+            const response = await fetch("/recognition", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const recognitions = await response.json();
+                recognitions.forEach(rec => {
+                    let inp = document.createElement('input')
+                    inp.type = "radio"
+                    inp.name = "a"
+                    inp.onchange = async () => {
+                        const response = await fetch("/recognition/" + rec.id, {
+                            method: "GET",
+                            headers: { "Accept": "application/json" },
+                        });
+                        if (response.ok === true) {
+                            const paths = await response.json();
+                            paths.forEach(a => {
+                                let img = document.createElement('img')
+                                img.src = ("data:image/png;base64," + a)
+                                imgs.append(img)
+                            })
+                        }
+                    }
+                    let li = document.createElement('li');
+                    li.append(inp)
+                    li.append(rec.title)
+                    li.append(rec.count)
+                    li.append(document.createElement('br'))
+                    ol.append(li)
+                });
+            }
+        }
+        //function choose(a) {
+        //    alert(a.count)
+        //}
+        // Получение одного пользователя
+        async function GetUser(id) {
+            const response = await fetch("/recognition" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: rec.title
+                })
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                alert(user.count);
+            }
+        }
+        // Добавление пользователя
+        async function CreateUser(userName, userAge) {
+
+            const response = await fetch("api/users", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: userName,
+                    age: parseInt(userAge, 10)
+                })
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                reset();
+                document.querySelector("tbody").append(row(user));
+            }
+        }
+        // Изменение пользователя
+        async function EditUser(userId, userName, userAge) {
+            const response = await fetch("api/users", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: parseInt(userId, 10),
+                    name: userName,
+                    age: parseInt(userAge, 10)
+                })
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                reset();
+                document.querySelector("tr[data-rowid='" + user.id + "']").replaceWith(row(user));
+            }
+        }
+        // Удаление пользователя
+        async function DeleteUser(id) {
+            const response = await fetch("/api/users/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                document.querySelector("tr[data-rowid='" + user.id + "']").remove();
+            }
+        }
+
+        // сброс формы
+        function reset() {
+            const form = document.forms["userForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+        }
+        // создание строки для таблицы
+        function row(user) {
+
+            const tr = document.createElement("tr");
+
+            const nameTd = document.createElement("td");
+            nameTd.append(user.title);
+            tr.append(nameTd);
+
+            const ageTd = document.createElement("td");
+            ageTd.append(user.count);
+            tr.append(ageTd);
+
+            //const linksTd = document.createElement("td");
+
+            //const editLink = document.createElement("a");
+            //editLink.setAttribute("data-id", user.id);
+            //editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            //editLink.append("Изменить");
+            //editLink.addEventListener("click", e => {
+
+            //    e.preventDefault();
+            //    GetUser(user.id);
+            //});
+            //linksTd.append(editLink);
+
+            //const removeLink = document.createElement("a");
+            //removeLink.setAttribute("data-id", user.id);
+            //removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            //removeLink.append("Удалить");
+            //removeLink.addEventListener("click", e => {
+
+            //    e.preventDefault();
+            //    DeleteUser(user.id);
+            //});
+
+            //linksTd.append(removeLink);
+            //tr.appendChild(linksTd);
+
+            return tr;
+        }
+        // сброс значений формы
+        //document.getElementById("reset").click(function (e) {
+
+        //    e.preventDefault();
+        //    reset();
+        //})
+
+        // отправка формы
+        //document.forms["userForm"].addEventListener("submit", e => {
+        //    e.preventDefault();
+        //    const form = document.forms["userForm"];
+        //    const id = form.elements["id"].value;
+        //    const name = form.elements["name"].value;
+        //    const age = form.elements["age"].value;
+        //    if (id == 0)
+        //        CreateUser(name, age);
+        //    else
+        //        EditUser(id, name, age);
+        //});
+
+        // загрузка пользователей
+        GetRecognitions();
+
+    </script>
+</body>
+</html>

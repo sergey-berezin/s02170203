@@ -58,6 +58,53 @@ namespace Server.Controllers
             Console.WriteLine("add");
             return a;
         }
+        
+        [HttpGet]
+        public async Task<List<Recognition>> Test()
+        {
+            Console.WriteLine("LOAD");
+            return await Task.Run(() =>
+            {
+                List<Recognition> b = new List<Recognition>();
+                using (var db = new DataBaseSetup.Context())
+                {
+                    foreach (var r in db.Recognitions.Include(a => a.Photos).ThenInclude(a => a.Pixels))
+                    {
+                        ObservableCollection<Photo> a = new ObservableCollection<Photo>();
+                        foreach (var photo in r.Photos)
+                        {
+                            a.Add(new Photo
+                            {
+                                IsSavedInDataBase = true,
+                                Path = photo.Path,
+                                Pixels = null,
+                                Image = null
+                            });
+                        }
+                        b.Add(new Recognition
+                        {
+                            Id = r.Id,
+                            Title = r.Title,
+                            Count = r.Photos.Count,
+                            Photos = a
+                        });
+                    }
+                }
+                Console.WriteLine("load");
+                return b;
+            });
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IEnumerable<string>> Photos(int id)
+        {
+            Console.WriteLine($"AAA{id}AAA");
+
+            using var db = new DataBaseSetup.Context();
+            return await (from a in db.Photos
+                          where a.RecognitionId == id
+                          select Convert.ToBase64String(a.Pixels.Pixels)).ToListAsync();
+        }
 
         [HttpGet("load")]
         public async Task<List<Recognition>> Load()
@@ -77,7 +124,8 @@ namespace Server.Controllers
                             {
                                 IsSavedInDataBase = true,
                                 Path = photo.Path,
-                                Pixels = photo.Pixels.Pixels,
+                                PixelsString = Convert.ToBase64String(photo.Pixels.Pixels),
+                                Pixels = null,
                                 Image = null
                             });
                         }
