@@ -335,7 +335,7 @@ namespace WPF
                     {
                         IsSavedInDataBase = true,
                         Path = photo.Path,                       
-                        Pixels = null,
+                        Pixels = Convert.FromBase64String(photo.PixelsString),
                         Image = ByteToImage(Convert.FromBase64String(photo.PixelsString))
                     });
                 }
@@ -470,10 +470,10 @@ namespace WPF
             {
                 for (int i = 0; i < Photos.Count; i++)
                 {
-                    var q = from rec in Recognitions
+                    var q = (from rec in Recognitions
                             from ph in rec.Photos
                             where ph.Path == Photos[i].Path
-                            select ph.Pixels;
+                            select ph.Pixels).ToArray();
 
                     if (q != null)
                     {
