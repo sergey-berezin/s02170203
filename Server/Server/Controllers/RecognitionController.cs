@@ -59,8 +59,8 @@ namespace Server.Controllers
             return a;
         }
         
-        [HttpGet]
-        public async Task<List<Recognition>> Test()
+        [HttpGet("loadwithoutimages")]
+        public async Task<List<Recognition>> LoadWithOutImages()
         {
             Console.WriteLine("LOAD");
             return await Task.Run(() =>
