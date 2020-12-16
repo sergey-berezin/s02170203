@@ -122,7 +122,6 @@ namespace ImageRecognition
                 Trace.WriteLine($"{nameof(OperationCanceledException)} thrown with message: {e.Message}");
             }
         }    
-
         public static async Task CancelRecognitionAsync()
         {
             try

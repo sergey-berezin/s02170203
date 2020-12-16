@@ -6,11 +6,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-//using Server.Hubs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Server.Interfaces;
+using Server.DataBases;
+
 
 namespace Server
 {
@@ -28,6 +26,7 @@ namespace Server
         {
             services.AddSignalR();
             services.AddControllers();
+            services.AddSingleton<IDataBase>(new MyDB());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -5,7 +5,12 @@ using System.Threading.Tasks;
 
 namespace Server.Interfaces
 {
-    interface IDataBase
+    public interface IDataBase
     {
+        public Task<IEnumerable<Contracts.Recognition>> GetAllRecognitionsWithoutImages();
+        public Task<IEnumerable<Contracts.Recognition>> GetAllRecognitions();
+        public Task<IEnumerable<string>> GetPhotosFromRecognitionWithId(int id);
+        public Task Save(IEnumerable<Contracts.Recognition> recognitons);
+        public Task Clear();
     }
 }

@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 using Contracts;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+
+using Server.Interfaces;
+using Server.Hubs;
 //using ImageRecognition;
 
 namespace Server.Controllers
@@ -16,11 +19,13 @@ namespace Server.Controllers
     [Route("[controller]")]
     public class RecognitionController : ControllerBase
     {
-        private static IHubContext<Hubs.RecognitionHub> hubContext;
-
-        public RecognitionController(IHubContext<Hubs.RecognitionHub> ahubContext)
+        private static IHubContext<RecognitionHub> hubContext;
+        private IDataBase dataBase;
+        
+        public RecognitionController(IHubContext<RecognitionHub> ahubContext, IDataBase dataBase)
         {
             hubContext = ahubContext;
+            this.dataBase = dataBase;
         }
 
         public static async void RealTimeAdd(ImageRecognition.Prediction s)
@@ -63,36 +68,7 @@ namespace Server.Controllers
         public async Task<List<Recognition>> LoadWithOutImages()
         {
             Console.WriteLine("LOAD");
-            return await Task.Run(() =>
-            {
-                List<Recognition> b = new List<Recognition>();
-                using (var db = new DataBaseSetup.Context())
-                {
-                    foreach (var r in db.Recognitions.Include(a => a.Photos).ThenInclude(a => a.Pixels))
-                    {
-                        ObservableCollection<Photo> a = new ObservableCollection<Photo>();
-                        foreach (var photo in r.Photos)
-                        {
-                            a.Add(new Photo
-                            {
-                                IsSavedInDataBase = true,
-                                Path = photo.Path,
-                                Pixels = null,
-                                Image = null
-                            });
-                        }
-                        b.Add(new Recognition
-                        {
-                            Id = r.Id,
-                            Title = r.Title,
-                            Count = r.Photos.Count,
-                            Photos = a
-                        });
-                    }
-                }
-                Console.WriteLine("load");
-                return b;
-            });
+            return (await dataBase.GetAllRecognitionsWithoutImages()).ToList(); ;
         }
 
         [HttpGet("{id}")]
@@ -100,46 +76,14 @@ namespace Server.Controllers
         {
             Console.WriteLine($"AAA{id}AAA");
 
-            using var db = new DataBaseSetup.Context();
-            return await (from a in db.Photos
-                          where a.RecognitionId == id
-                          select Convert.ToBase64String(a.Pixels.Pixels)).ToListAsync();
+            return await dataBase.GetPhotosFromRecognitionWithId(id);
         }
 
         [HttpGet("load")]
         public async Task<List<Recognition>> Load()
         {
             Console.WriteLine("LOAD");
-            return await Task.Run(() =>
-            {
-                List<Recognition> b = new List<Recognition>();
-                using (var db = new DataBaseSetup.Context())
-                {
-                    foreach (var r in db.Recognitions.Include(a => a.Photos).ThenInclude(a => a.Pixels))
-                    {
-                        ObservableCollection<Photo> a = new ObservableCollection<Photo>();
-                        foreach (var photo in r.Photos)
-                        {
-                            a.Add(new Photo
-                            {
-                                IsSavedInDataBase = true,
-                                Path = photo.Path,
-                                PixelsString = Convert.ToBase64String(photo.Pixels.Pixels),
-                                Pixels = null,
-                                Image = null
-                            });
-                        }
-                        b.Add(new Recognition
-                        {
-                            Title = r.Title,
-                            Count = r.Photos.Count,
-                            Photos = a
-                        });
-                    }
-                }
-                Console.WriteLine("load");
-                return b;
-            });
+            return (await dataBase.GetAllRecognitions()).ToList();
         }
 
         [HttpPost("start")]
@@ -176,51 +120,7 @@ namespace Server.Controllers
         public async Task SaveAsync()
         {
             Console.WriteLine("SAVE");
-            await Task.Run(async () =>
-            {
-                using (var db = new DataBaseSetup.Context())
-                {
-                    foreach (var r in Program.Recognitions)
-                    {
-                        var rec = (from b in db.Recognitions
-                                   where r.Title == b.Title
-                                   select b).FirstOrDefault();
-
-                        if (rec == null)
-                        {
-                            db.Recognitions.Add(new DataBaseSetup.Recognition
-                            {
-                                Title = r.Title,
-                            });
-                            await db.SaveChangesAsync();
-
-                            rec = (from b in db.Recognitions
-                                   where b.Title == r.Title
-                                   select b).FirstOrDefault();
-                        }
-
-                        List<DataBaseSetup.Photo> a = new List<DataBaseSetup.Photo>();
-                        foreach (var photo in r.Photos)
-                        {
-                            if (!photo.IsSavedInDataBase)
-                            {
-                                a.Add(new DataBaseSetup.Photo
-                                {
-                                    Path = photo.Path,
-                                    Pixels = new DataBaseSetup.Blob
-                                    {
-                                        Pixels = photo.Pixels
-                                    },
-                                    RecognitionId = rec.Id
-                                });
-                            }
-                            photo.IsSavedInDataBase = true;
-                        }
-                        db.Photos.AddRange(a);
-                    }
-                    await db.SaveChangesAsync();
-                }
-            });
+            await dataBase.Save(Program.Recognitions);
             Program.Recognitions.Clear();
             Program.Photos.Clear();
             Console.WriteLine("save");
@@ -230,13 +130,7 @@ namespace Server.Controllers
         public async Task ClearAsync()
         {
             Console.WriteLine("CLEAR");
-            using (var db = new DataBaseSetup.Context())
-            {               
-                db.Recognitions.RemoveRange(db.Recognitions);
-                db.Photos.RemoveRange(db.Photos);
-                db.Blobs.RemoveRange(db.Blobs);
-                await db.SaveChangesAsync();               
-            }
+            await dataBase.Clear();
             Program.Photos.Clear();
             Program.Recognitions.Clear();
             Console.WriteLine("clear");
